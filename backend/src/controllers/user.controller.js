@@ -2,7 +2,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 
-const SECRET_KEY = "your_secret_key"; // Change this to an environment variable
 
 // ✅ Register a New User
 const registerUser = async (req, res) => {
