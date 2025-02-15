@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import complaintRoutes from "./routes/complaint.routes.js";
+
 
 
 const app = express();
@@ -16,6 +16,13 @@ app.use(
 );
 app.use(cookieParser());
 
-app.use("api/v1/complaints", complaintRoutes);
+
+// Import routes
+import complaints from "./routes/complaint.routes.js";
+import users from "./routes/user.routes.js";
+
+// Use routes
+app.use("/api/v1/complaints", complaints);
+app.use("/api/v1/users", users);
 
 export default app;

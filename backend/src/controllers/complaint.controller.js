@@ -2,14 +2,16 @@ import Complaint from "../models/complaint.model.js";
 
 export async function submitComplaint(req, res) {
     try {
+        console.log("Received Payload:", req.body); // Debugging Log
         const { title, description } = req.body;
-        const studentId = req.user.id; // Authenticated user ID
 
-        // Create a new complaint
+        if (!title || !description) {
+            return res.status(400).json({ message: "Title and description are required" });
+        }
+
         const newComplaint = new Complaint({
             title,
-            description,
-            studentId, // Kept hidden unless identity reveal is voted for
+            description
         });
 
         await newComplaint.save();
