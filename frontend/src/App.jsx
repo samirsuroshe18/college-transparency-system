@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import AppRouter from './config/Router'
+
 
 function App() {
 
   return (
     <>
-      <div className='bg-gray-800 text-white'>hello </div>
+      <AppRouter />
+      
     </>
   )
 }
