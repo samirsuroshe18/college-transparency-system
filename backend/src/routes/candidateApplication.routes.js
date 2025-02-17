@@ -3,7 +3,7 @@ import { applyForElection, getApplications, updateApplicationStatus } from "../c
 
 const router = express.Router();
 
-router.post("/apply", applyForElection);
+router.post("/:electionId/apply", applyForElection); // ✅ Fix route structure
 router.get("/:electionId", getApplications);
 router.put("/update/:id", updateApplicationStatus);
 

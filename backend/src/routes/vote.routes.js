@@ -9,6 +9,7 @@ router.post("/vote", castVote);
 // Route to get election results
 router.get("/results/:electionId", getElectionResults);
 
+  
 // Route to get all votes for an election
 //router.get("/votes/:electionId", getVotes);
 

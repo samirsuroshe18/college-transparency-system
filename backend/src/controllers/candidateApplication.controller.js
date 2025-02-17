@@ -1,17 +1,43 @@
 import Application from "../models/candidateApplication.model.js";
 import User from "../models/User.js";
+import Election from "../models/election.model.js";
 
-// Apply for Election
+
 export const applyForElection = async (req, res) => {
   try {
-    const { electionId, userId } = req.body;
-    const application = new Application({ electionId, userId });
-    await application.save();
-    res.status(201).json(application);
+      const { electionId } = req.params;
+      const { name } = req.body; // ✅ Extract name from request body
+
+      console.log("Received electionId:", electionId);
+      console.log("Received name:", name);
+
+      if (!name) {
+          return res.status(400).json({ message: "Candidate name is required" });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(electionId)) {
+          return res.status(400).json({ message: "Invalid election ID format" });
+      }
+
+      const election = await Election.findById(electionId);
+      if (!election) {
+          return res.status(404).json({ message: "Election not found" });
+      }
+
+      const newCandidate = new Candidate({
+          name,
+          electionId
+      });
+
+      await newCandidate.save();
+      res.status(201).json({ message: "Candidate applied successfully!", candidate: newCandidate });
   } catch (error) {
-    res.status(500).json({ message: "Server Error" });
+      console.error("Error applying as candidate:", error);
+      res.status(500).json({ message: "Server Error" });
   }
 };
+
+
 
 // Get Applications for a Specific Election
 export const getApplications = async (req, res) => {

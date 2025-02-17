@@ -12,4 +12,24 @@ router.get("/:electionId/candidates", getCandidates);
 // Get a specific candidate by ID
 router.get("/candidate/:candidateId", getCandidateById);
 
+router.post("/elections/:id/apply", async (req, res) => {
+    try {
+      const { name, department } = req.body;
+      const election = await Election.findById(req.params.id);
+  
+      if (!election) {
+        return res.status(404).json({ message: "Election not found" });
+      }
+  
+      const application = { name, department, status: "pending" };
+      election.applications.push(application);
+      await election.save();
+  
+      res.json({ message: "Application submitted successfully!" });
+    } catch (error) {
+      res.status(500).json({ message: "Server Error" });
+    }
+  });
+
+
 export default router;

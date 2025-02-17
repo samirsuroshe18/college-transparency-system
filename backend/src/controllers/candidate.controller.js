@@ -1,23 +1,36 @@
 import Candidate from "../models/candidate.model.js";
 import Election from "../models/election.model.js";
 
-// Add a candidate to an election (Admin Only)
+import mongoose from "mongoose";
+
 export const addCandidate = async (req, res) => {
-  try {
-    const { electionId } = req.params;
-    const { name, agenda } = req.body;
+    try {
+        const { name, className, agenda, experience } = req.body;
+        const { electionId } = req.params;
+        console.log("Received electionId:", electionId);
 
-    const election = await Election.findById(electionId);
-    if (!election) return res.status(404).json({ error: "Election not found" });
+        // ✅ Validate MongoDB ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(electionId)) {
+            return res.status(400).json({ message: "Invalid election ID format" });
+        }
 
-    const candidate = new Candidate({ electionId, name, agenda });
-    await candidate.save();
+        // ✅ Check if the election exists
+        const election = await Election.findById(electionId);
+        if (!election) {
+            return res.status(404).json({ message: "Election not found" });
+        }
 
-    res.status(201).json(candidate);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add candidate" });
-  }
+        // ✅ Create new candidate
+        const newCandidate = new Candidate({ name, className, agenda, experience, electionId });
+        await newCandidate.save();
+
+        res.status(201).json({ message: "Candidate applied successfully!", candidate: newCandidate });
+    } catch (error) {
+        console.error("Error applying as candidate:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
 };
+
 
 // Get all candidates for a specific election
 export const getCandidates = async (req, res) => {

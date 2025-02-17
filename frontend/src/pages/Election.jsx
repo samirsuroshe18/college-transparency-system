@@ -2,16 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
-import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
 
 const StudentElectionPanel = () => {
   const [openModal, setOpenModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [applyModal, setApplyModal] = useState(false);
-
-  const upcomingElections = [
-    { title: "Class Representative", electionDate: "2025-03-15", applyBefore: "2025-03-10" },
-  ];
+  const [selectedElection, setSelectedElection] = useState(null);
+  const [candidateName, setCandidateName] = useState("");
+  const [department, setDepartment] = useState("");
 
   const ongoingElections = [
     {
@@ -42,40 +42,94 @@ const StudentElectionPanel = () => {
     setOpenModal(true);
   };
 
+  const [upcomingElections, setUpcomingElections] = useState([]);
+
+  useEffect(() => {
+    fetchUpcomingElections();
+  }, []);
+
+  const fetchUpcomingElections = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/v1/admin/elections/upcoming");
+      const data = await response.json();
+      setUpcomingElections(data);
+    } catch (error) {
+      console.error("Error fetching upcoming elections:", error);
+    }
+  };
+
+  const handleApplyClick = (election) => {
+    setSelectedElection(election);
+    setApplyModal(true);
+  };
+
+  const applyForElection = async () => {
+    if (!candidateName || !department) {
+      alert("Please fill all fields!");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/v1/candidates/${selectedElection._id}/candidate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: candidateName, department }),
+      });
+      const data = await response.json();
+      alert(data.message);
+      setApplyModal(false);
+      setCandidateName("");
+      setDepartment("");
+    } catch (error) {
+      console.error("Error applying for election:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#131314] text-white p-6">
       <h1 className="text-3xl font-bold text-amber-500">Student Election Panel</h1>
-      
-      {/* Upcoming Elections */}
-      <section className="mt-6">
-        <h2 className="text-lg font-semibold text-amber-400">Upcoming Elections</h2>
-        {upcomingElections.map((election, index) => (
-          <Card key={index} className="mt-4 bg-[#1a1a1d] shadow-lg rounded-xl">
-            <CardContent className="p-5 flex justify-between items-center">
-              <div>
-                <h3 className="text-xl text-gray-300 font-semibold">{election.title}</h3>
-                <p className="text-gray-400">Election Date: {election.electionDate}</p>
-                <p className="text-gray-400">Apply Before: {election.applyBefore}</p>
-              </div>
-              <Button onClick={() => setApplyModal(true)} className="bg-amber-500 hover:bg-amber-600 text-black px-5 py-2 rounded-lg shadow-md">Apply</Button>
-            </CardContent>
-          </Card>
-        ))}
+
+      <header className="flex justify-between items-center py-4 px-6 bg-black/20 rounded-xl shadow-md">
+        <h1 className="text-2xl font-bold text-amber-500">Upcoming Elections</h1>
+      </header>
+
+      <section className="bg-black/20 p-6 rounded-xl shadow-md">
+        {upcomingElections.length === 0 ? (
+          <p className="text-gray-400">No upcoming elections.</p>
+        ) : (
+          upcomingElections.map((election) => (
+            <div key={election._id} className="bg-black/30 p-4 rounded-lg mt-4">
+              <h3 className="text-lg font-medium">{election.title}</h3>
+              <p className="text-gray-400">Election Date: {election.electionDate}</p>
+              <Button
+                onClick={() => handleApplyClick(election)}
+                className="mt-2 bg-amber-500 px-4 py-2 rounded-lg font-semibold hover:bg-amber-400 transition"
+              >
+                Apply as Candidate
+              </Button>
+            </div>
+          ))
+        )}
       </section>
-      
+
       {/* Ongoing Elections */}
       <section className="mt-6">
         <h2 className="text-lg font-semibold text-amber-400">Ongoing Elections</h2>
         <Accordion type="single" collapsible>
           {ongoingElections.map((election, index) => (
-            <AccordionItem key={index} value={`election-${index}`} className="mt-4 border-none">
-              <AccordionTrigger className="bg-[#1a1a1d] p-4 text-left text-gray-300 font-semibold rounded-xl shadow-md border-0">{election.title}</AccordionTrigger>
+            <AccordionItem key={index} value={`election-${index}`} className="mt-4">
+              <AccordionTrigger className="bg-[#1a1a1d] p-4 text-left text-gray-300 font-semibold rounded-xl shadow-md border-0">
+                {election.title}
+              </AccordionTrigger>
               <AccordionContent className="p-5 bg-[#1a1a1d] rounded-xl mt-2 shadow-md">
                 {election.candidates.map((candidate, idx) => (
                   <div key={idx} className="mt-4 bg-[#222] p-4 rounded-lg shadow-md">
                     <p className="text-lg text-gray-300 font-semibold">{candidate.name}</p>
                     <p className="text-gray-400">{candidate.agenda}</p>
-                    <Button onClick={() => handleVoteClick(candidate)} className="mt-2 bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg shadow-md">
+                    <Button
+                      onClick={() => handleVoteClick(candidate)}
+                      className="mt-2 bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg shadow-md"
+                    >
                       Vote
                     </Button>
                   </div>
@@ -86,34 +140,43 @@ const StudentElectionPanel = () => {
         </Accordion>
       </section>
 
-      {/* Vote Confirmation Modal */}
-      <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent className="bg-[#1a1a1d] rounded-lg shadow-lg text-white">
-          <DialogHeader>
-            <h2 className="text-xl font-semibold">Confirm Your Vote</h2>
-          </DialogHeader>
-          <p className="text-gray-400">Are you sure you want to vote for {selectedCandidate?.name}?</p>
-          <DialogFooter>
-            <Button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md" onClick={() => setOpenModal(false)}>
-              Cancel
-            </Button>
-            <Button className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg shadow-md">Confirm</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Apply Modal */}
       <Dialog open={applyModal} onOpenChange={setApplyModal}>
-        <DialogContent className="bg-[#1a1a1d] rounded-lg shadow-lg text-white">
+        <DialogContent className="bg-[#1a1a1d] rounded-lg shadow-lg text-white w-[90%] max-w-md p-6">
           <DialogHeader>
-            <h2 className="text-xl font-semibold">Apply for Election</h2>
+            <h2 className="text-xl font-semibold">Apply for {selectedElection?.title}</h2>
           </DialogHeader>
-          <p className="text-gray-400">Fill out the form to apply for this election.</p>
-          <DialogFooter>
-            <Button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md" onClick={() => setApplyModal(false)}>
+          <div className="flex flex-col gap-4">
+            <label className="text-gray-300">Candidate Name</label>
+            <Input
+              type="text"
+              value={candidateName}
+              onChange={(e) => setCandidateName(e.target.value)}
+              placeholder="Enter your name"
+              className="p-2 bg-[#222] border border-gray-500 rounded-lg text-white"
+            />
+            <label className="text-gray-300">Department</label>
+            <Input
+              type="text"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              placeholder="Enter your department"
+              className="p-2 bg-[#222] border border-gray-500 rounded-lg text-white"
+            />
+          </div>
+          <DialogFooter className="mt-4 flex justify-end gap-4">
+            <Button
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md"
+              onClick={() => setApplyModal(false)}
+            >
               Cancel
             </Button>
-            <Button className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg shadow-md">Submit</Button>
+            <Button
+              className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg shadow-md"
+              onClick={applyForElection}
+            >
+              Submit Application
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

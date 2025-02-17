@@ -8,5 +8,4 @@ const CandidateSchema = new mongoose.Schema({
 
 const Candidate = mongoose.models.Candidate || mongoose.model("Candidate", CandidateSchema);
 
-
 export default Candidate;
