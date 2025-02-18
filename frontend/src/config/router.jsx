@@ -8,8 +8,9 @@ import NotFound from "../pages/commonPages/NotFound.jsx";
 import AdminPanel from "../pages/FacilityBooking/AdminPanel.jsx";
 import StudentElectionPanel from "../pages/StudentElection/Election.jsx";
 import AdminElectionPanel from "../pages/StudentElection/AdminElection.jsx";
+import AdminCollegePanel from "../pages/AdminCollegePanel.jsx";
 
-const Router = createBrowserRouter(
+const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       <Route path="/" element={<App />}>
@@ -37,4 +38,4 @@ const Router = createBrowserRouter(
   )
 );
 
-export default Router;
+export default router;
