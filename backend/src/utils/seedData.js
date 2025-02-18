@@ -34,3 +34,5 @@ const seedData = async () => {
     await Student.insertMany(students);
     console.log("80 Students Seeded Successfully!");
 };
+
+export default seedData;
