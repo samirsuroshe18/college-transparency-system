@@ -1,18 +1,40 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "../pages/Home";
-import Election from "../pages/Election";
-import NotFound from "../pages/NotFound";
+import { createBrowserRouter, createRoutesFromElements, Route,} from "react-router-dom";
+import App from "../App.jsx";
+import Layout from '../components/commonComponents/Layout.jsx';
+import Home from "../pages/commonPages/Home.jsx";
+import FacilityDashboard from "../pages/FacilityBooking/Dashboard.jsx";
+import LoginPage from "../pages/commonPages/Login.jsx";
+import NotFound from "../pages/commonPages/NotFound.jsx";
+import AdminPanel from "../pages/FacilityBooking/AdminPanel.jsx";
+import StudentElectionPanel from "../pages/StudentElection/Election.jsx";
+import AdminElectionPanel from "../pages/StudentElection/AdminElection.jsx";
 
-const AppRouter = () => {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/election" element={<Election />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Router>
-  );
-};
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <>
+      <Route path="/" element={<App />}>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
 
-export default AppRouter;
+          {/* Facility Booking Module Routes */}
+          <Route path="dashboard" element={<FacilityDashboard />}>
+            <Route path="facility" element={<FacilityDashboard />} />
+            <Route path="admin" element={<AdminPanel />} />
+          </Route>
+
+
+          {/* Student Election Module Routes */}
+          <Route path="election" element={<StudentElectionPanel />} />
+          <Route path="admin-election" element={<AdminElectionPanel />} />
+
+          {/* put remaining routes here... */}
+
+        </Route>
+      </Route>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="*" element={<NotFound />} />
+    </>
+  )
+);
+
+export default router;
