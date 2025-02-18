@@ -14,22 +14,22 @@ const NAVIGATION = [
     title: 'Main items',
   },
   {
-    segment: 'dashboard',
-    title: 'Facility Booking',
+    segment: 'election',
+    title: 'Election',
     icon: <DashboardIcon />,
   },
-  {
-    segment: 'login',
-    title: 'Orders',
-    icon: <ShoppingCartIcon />,
-  },
-  {
-    kind: 'divider',
-  },
-  {
-    kind: 'header',
-    title: 'Analytics',
-  },
+  // {
+  //   segment: 'login',
+  //   title: 'Orders',
+  //   icon: <ShoppingCartIcon />,
+  // },
+  // {
+  //   kind: 'divider',
+  // },
+  // {
+  //   kind: 'header',
+  //   title: 'Analytics',
+  // },
   {
     segment: 'dashboard',
     title: 'Facility Booking',
@@ -47,11 +47,11 @@ const NAVIGATION = [
       },
     ],
   },
-  {
-    segment: 'integrations',
-    title: 'Integrations',
-    icon: <LayersIcon />,
-  },
+  // {
+  //   segment: 'integrations',
+  //   title: 'Integrations',
+  //   icon: <LayersIcon />,
+  // },
 ];
 
 const BRANDING = {

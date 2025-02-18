@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { createFacility, getFacilities } from "../controllers/facility.controller.js";
-import {verifyJwt} from "../middlewares/auth.middleware.js";
+import { createFacility, getFacilities } from "../../controllers/facilityBookingModule/facility.controller.js";
+import {verifyJwt} from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 

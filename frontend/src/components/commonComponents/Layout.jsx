@@ -4,11 +4,11 @@ import { DashboardLayout } from "@toolpad/core/DashboardLayout";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import LinearProgress from "@mui/material/LinearProgress";
 import { useDispatch} from "react-redux";
-import { handleAxiosError } from "../utils/handleAxiosError";
-import { getCurrentUser } from "../api/authApi";
-import { showNotificationWithTimeout } from "../redux/slices/notificationSlice";
-import { login } from "../redux/slices/authSlice";
-import SnackBar from "../utils/SnackBar";
+import { handleAxiosError } from "../../utils/handleAxiosError";
+import { getCurrentUser } from "../../api/authApi";
+import { showNotificationWithTimeout } from "../../redux/slices/notificationSlice";
+import { login } from "../../redux/slices/authSlice";
+import SnackBar from "../../utils/SnackBar";
 
 export default function Layout() {
   const [loading, setLoading] = useState(true);

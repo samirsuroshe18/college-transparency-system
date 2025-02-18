@@ -1,7 +1,7 @@
-import asyncHandler from '../utils/asyncHandler.js';
-import ApiError from '../utils/ApiError.js';
-import ApiResponse from '../utils/ApiResponse.js';
-import { Facility } from '../models/facility.model.js'
+import asyncHandler from '../../utils/asyncHandler.js';
+import ApiError from '../../utils/ApiError.js';
+import ApiResponse from '../../utils/ApiResponse.js';
+import { Facility } from '../../models/facilityBookingModule/facility.model.js';
 
 const createFacility = asyncHandler(async (req, res) => {
   const { name, description, available, location } = req.body;

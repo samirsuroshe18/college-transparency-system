@@ -1,4 +1,4 @@
-import Complaint from "../models/complaint.model.js";
+import Complaint from "../../models/ComplaintModule/complaint.model.js";
 
 export async function submitComplaint(req, res) {
     try {

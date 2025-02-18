@@ -1,7 +1,7 @@
-import asyncHandler from '../utils/asyncHandler.js';
-import ApiError from '../utils/ApiError.js';
-import ApiResponse from '../utils/ApiResponse.js';
-import {Booking} from "../models/booking.model.js";
+import asyncHandler from '../../utils/asyncHandler.js';
+import ApiError from '../../utils/ApiError.js';
+import ApiResponse from '../../utils/ApiResponse.js';
+import { Booking } from '../../models/facilityBookingModule/booking.model.js';
 
 const createBooking = asyncHandler(async (req, res) => {
 

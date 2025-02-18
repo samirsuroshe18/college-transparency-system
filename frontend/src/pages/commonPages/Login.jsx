@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { googleLoginUser } from "../api/authApi";
+import { googleLoginUser } from "../../api/authApi";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { Loader2 } from "lucide-react";
 import { useDispatch } from 'react-redux'
-import { login } from "../redux/slices/authSlice";
+import { login } from "../../redux/slices/authSlice";
 import { useNavigate } from "react-router-dom";
-import { showNotificationWithTimeout } from "../redux/slices/notificationSlice";
-import { handleAxiosError } from "../utils/handleAxiosError";
-import SnackBar from "../utils/SnackBar";
+import { showNotificationWithTimeout } from "../../redux/slices/notificationSlice";
+import { handleAxiosError } from "../../utils/handleAxiosError";
+import SnackBar from "../../utils/SnackBar";
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
