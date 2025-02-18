@@ -1,60 +1,111 @@
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import User from "../models/user.model.js";
+import asyncHandler from '../utils/asyncHandler.js';
+import ApiError from '../utils/ApiError.js';
+import ApiResponse from '../utils/ApiResponse.js';
+import { User } from '../models/user.model.js';
+import mailSender from '../utils/mailSender.js';
 
-const SECRET_KEY = "your_secret_key"; // Change this to an environment variable
-
-// ✅ Register a New User
-const registerUser = async (req, res) => {
+const generateAccessAndRefreshToken = async (userId) => {
     try {
-        const { name, email, password, role } = req.body;
+        const user = await User.findById(userId);
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
 
-        if (!name || !email || !password) {
-            return res.status(400).json({ message: "All fields are required" });
-        }
+        user.refreshToken = refreshToken;
 
-        // Check if user already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ message: "User already exists" });
-        }
+        // when we use save() method is used then all the fields are neccesary so to avoid that we have to pass an object with property {validatBeforeSave:false}
+        await user.save({ validateBeforeSave: false });
 
-        const newUser = new User({ name, email, password, role });
-        await newUser.save();
-
-        res.status(201).json({ message: "User registered successfully" });
+        return { accessToken, refreshToken }
     } catch (error) {
-        console.error("Error registering user:", error);
-        res.status(500).json({ message: "Error registering user" });
+        throw new ApiError(500, "Something went wrong while generating refresh and access token");
     }
 };
 
-// ✅ Login User & Generate JWT Token
-const loginUser = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ message: "Email and password are required" });
-        }
-
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(401).json({ message: "Invalid email or password" });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(401).json({ message: "Invalid email or password" });
-        }
-
-        const token = jwt.sign({ id: user._id, role: user.role }, SECRET_KEY, { expiresIn: "1h" });
-
-        res.status(200).json({ message: "Login successful", token });
-    } catch (error) {
-        console.error("Error logging in user:", error);
-        res.status(500).json({ message: "Error logging in user" });
+const googleLogin = asyncHandler(async (req, res) => {
+    const { name, email, profilePic } = req.body;
+    
+    if (!name || !email || !profilePic) {
+        throw new ApiError(400, "Please provide all the required fields");
     }
-};
 
-export { registerUser, loginUser };
+    if (!email.endsWith("@gmail.com")) {
+        throw new ApiError(400, "Access Denied");
+    }
+
+    const existedUser = await User.findOne({ email });
+
+    if (!existedUser) {
+        const loggedInUser = await User.create({
+            name,
+            email,
+            profilePic,
+            isGoogleVerified: true,
+        });
+
+        if (!loggedInUser) {
+            throw new ApiError(500, "Something went wrong");
+        }
+    
+        const { accessToken, refreshToken } = await generateAccessAndRefreshToken(loggedInUser._id);
+
+        //option object is created beacause we dont want to modified the cookie to front side
+        const option = {
+            httpOnly: 'true' === process.env.HTTP_ONLY,
+            secure: 'true' === process.env.COOKIE_SECURE,
+            maxAge: Number(process.env.COOKIE_MAX_AGE),
+        }
+
+        return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
+            new ApiResponse(200, { loggedInUser, accessToken, refreshToken }, "User logged in sucessully")
+        );
+    }
+
+    const isUpdate = await User.findByIdAndUpdate(
+        existedUser._id,
+        {
+            $set: {
+                name: name,
+                profilePic: profilePic,
+                isGoogleVerified: true,
+            },
+            
+        },
+        { new: true }
+    ).select("-password")
+
+    if (!isUpdate) {
+        throw new ApiError(500, "Something went wrong");
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(isUpdate._id);
+
+    //option object is created beacause we dont want to modified the cookie to front side
+    const option = {
+        httpOnly: 'true' === process.env.HTTP_ONLY,
+        secure: 'true' === process.env.COOKIE_SECURE,
+        maxAge: Number(process.env.COOKIE_MAX_AGE),
+    }
+
+    return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
+        new ApiResponse(200, { isUpdate, accessToken, refreshToken }, "User logged in sucessully")
+    );
+});
+
+const logoutUser = asyncHandler(async (req, res) => {
+
+    return res.status(200).clearCookie('accessToken').status(200).json(
+        new ApiResponse(200, req.user, "User logged out successfully")
+    );
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+    return res.status(200).json(
+        new ApiResponse(200, req.user, "User session is Active")
+    );
+});
+
+export {
+    googleLogin,
+    logoutUser,
+    getCurrentUser,
+}

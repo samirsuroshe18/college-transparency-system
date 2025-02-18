@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { submitComplaint } from "../controllers/complaint.controller.js";
-import { authenticateUser } from "../middlewares/user.middleware.js";
+import { verifyJwt } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.route("/submit-complaint").post(authenticateUser, submitComplaint);
+router.route("/submit-complaint").post(verifyJwt, submitComplaint);
 
 export default router;

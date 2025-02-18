@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { loginUser, registerUser } from "../controllers/user.controller.js";
-
+import { getCurrentUser, googleLogin, logoutUser,} from "../controllers/user.controller.js";
+import { verifyJwt } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.route("/login").post(loginUser);
-router.route("/register").post(registerUser);
+router.route("/google-login").post(googleLogin);
+router.route("/current-user").get(verifyJwt, getCurrentUser);
+router.route("/logout").get(verifyJwt, logoutUser);
 
 export default router;
