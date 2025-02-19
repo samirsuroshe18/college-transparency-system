@@ -44,7 +44,27 @@ function App() {
       icon: <AnnouncementIcon />,
     },
     {
-      segment: 'elections',
+      segment: 'college-dashboard',
+      title: 'College Dashboard',
+      icon: <BusinessCenterIcon />,
+    },
+    {
+      segment: 'student-dashboard',
+      title: 'Student Dashboard',
+      icon: <BusinessCenterIcon />,
+    },
+    {
+      segment: 'admin-dashboard',
+      title: 'Admin ',
+      icon: <BusinessCenterIcon />,
+    },
+    {
+      segment: 'faculty-dashboard',
+      title: 'Faculty Dashboard',
+      icon: <BusinessCenterIcon />,
+    },
+    {
+      segment: 'election',
       title: 'Elections',
       icon: <HowToVoteIcon />,
     },
@@ -64,8 +84,18 @@ function App() {
       icon: <ReportProblemIcon />,
     },
     {
+      segment: 'admin-wallofshame',
+      title: 'Wall of Shame',
+      icon: <ReportProblemIcon />,
+    },
+    {
       segment: 'complaints',
       title: 'Complaint Box',
+      icon: <ReportProblemIcon />,
+    },
+    {
+      segment: 'admin-complaints',
+      title: 'Admin Complaints',
       icon: <ReportProblemIcon />,
     },
     {
