@@ -1,10 +1,10 @@
+import {login} from '../redux/slices/authSlice.js';
 import { showNotificationWithTimeout } from '../redux/slices/notificationSlice.js';
 import axiosInstance from './config.js'; 
 
 const googleLoginUser = async (token, setLoading, dispatch) => {
     setLoading(true);
     try {
-        // Step 1: Send login request
         const response = await axiosInstance.post(
             `/api/v1/user/google-login`,
             {
@@ -17,21 +17,17 @@ const googleLoginUser = async (token, setLoading, dispatch) => {
 
         dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
 
-        // Step 2: Fetch current user to get their role-based redirect
+        // ✅ Fetch current user and store in Redux
         const userResponse = await axiosInstance.get(`/api/v1/user/current-user`, { withCredentials: true });
+        dispatch(login(userResponse.data.data));
 
         setLoading(false);
-
-        // Step 3: Return both user data & redirect path
-        return {
-            userData: response.data,
-            redirectTo: userResponse.data.data.redirectTo, // Extract redirect path
-        };
     } catch (error) {
         setLoading(false);
         throw error;
     }
 };
+
 
 const logoutUser = async (setLoading, dispatch) => {
     setLoading(true);
