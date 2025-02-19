@@ -5,7 +5,7 @@ import Election from "../../models/electionModule/election.model.js";
 const router = express.Router();
 
 router.post("/create", createElection);
-router.get("/", getElections);
+
 router.put("/end/:id", endElection);
 
 // ✅ Fetch upcoming elections properly

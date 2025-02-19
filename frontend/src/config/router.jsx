@@ -9,6 +9,7 @@ import AdminPanel from "../pages/FacilityBooking/AdminPanel.jsx";
 import StudentElectionPanel from "../pages/StudentElection/Election.jsx";
 import AdminElectionPanel from "../pages/StudentElection/AdminElection.jsx";
 import AdminCollegePanel from "../pages/AdminCollegePanel.jsx";
+import FacultyDashboard from "../pages/FacultyDashboard.jsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -27,8 +28,10 @@ const router = createBrowserRouter(
           {/* Student Election Module Routes */}
           <Route path="election" element={<StudentElectionPanel />} />
           <Route path="admin-election" element={<AdminElectionPanel />} />
-          <Route path="collegeadmin" element={<AdminCollegePanel />} />
+          
           {/* put remaining routes here... */}
+          <Route path="collegeadmin" element={<AdminCollegePanel />} />
+          <Route path="faculty" element={<FacultyDashboard />} />
 
         </Route>
       </Route>

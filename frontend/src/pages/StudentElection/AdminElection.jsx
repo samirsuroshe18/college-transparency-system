@@ -19,7 +19,7 @@ const AdminElectionPanel = () => {
   // ✅ Fetch Elections
   const fetchElections = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/v1/elections");
+      const response = await fetch("http://localhost:3000/api/v1/elections/");
       const data = await response.json();
       setElections(data);
     } catch (error) {
