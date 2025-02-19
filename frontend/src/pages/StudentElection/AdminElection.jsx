@@ -19,7 +19,7 @@ const AdminElectionPanel = () => {
   // ✅ Fetch Elections
   const fetchElections = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/v1/elections/");
+      const response = await fetch("http://localhost:3000/api/v1/admin/elections/");
       const data = await response.json();
       setElections(data);
     } catch (error) {
@@ -27,19 +27,18 @@ const AdminElectionPanel = () => {
     }
   };
 
-  // ✅ Create a new Election
   const createElection = async () => {
-    if (!title || !applicationDeadline || !resultDate || !votingCriteria.branch || !votingCriteria.year || !votingCriteria.division) return;
-
+    if (!title || !applicationDeadline || !resultDate) return;
+  
     try {
       await fetch("http://localhost:3000/api/v1/admin/elections/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          title, 
-          applicationDeadline, 
-          resultDate, 
-          votingCriteria 
+        body: JSON.stringify({
+          title,
+          electionDate: resultDate, // ✅ Ensure this field is sent
+          applicationDeadline,
+          votingCriteria,
         }),
       });
       fetchElections(); // Refresh data after creation
@@ -51,6 +50,7 @@ const AdminElectionPanel = () => {
       console.error("Error creating election:", error);
     }
   };
+  
 
   // ✅ Toggle Election Details
   const toggleElection = (id) => {

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const ApplicationSchema = new mongoose.Schema({
+const candidateApplicationSchema = new mongoose.Schema({
   electionId: { type: mongoose.Schema.Types.ObjectId, ref: "Election", required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   name: { type: String, required: true },
@@ -10,5 +10,5 @@ const ApplicationSchema = new mongoose.Schema({
   status: { type: String, enum: ["Pending", "Approved", "Rejected"], default: "Pending" },
 });
 
-const Application = mongoose.model("Application", ApplicationSchema);
+const Application = mongoose.model("CandidateApplication", candidateApplicationSchema);
 export default Application;

@@ -37,6 +37,8 @@ import bookingRouter from "./routes/facilityBookingModule/booking.routes.js";
 import voteRouter from "./routes/electionModule/vote.routes.js";
 import adminElectionRouter from "./routes/electionModule/election.routes.js";
 import candidateRouter from "./routes/electionModule/candidate.routes.js";
+import candidateApplicationRouter from "./routes/electionModule/candidateApplication.routes.js";
+import voteRoutes from "./routes/electionModule/vote.routes.js";
 
 //routes declaration
 app.use("/api/v1/user", userRouter);
@@ -46,6 +48,8 @@ app.use("/api/v1/booking", bookingRouter);
 app.use("/api/v1/votes", voteRouter);
 app.use("/api/v1/admin/elections", adminElectionRouter);
 app.use("/api/v1/candidates", candidateRouter);
+app.use("/api/v1/applications", candidateApplicationRouter);
+app.use("/api/v1", voteRoutes);
 
 app.use(errorHandler);
 
