@@ -40,7 +40,7 @@ const googleLogin = asyncHandler(async (req, res) => {
             email,
             profilePic,
             isGoogleVerified: true,
-            role: "admin", // Default role for new user
+            role: "student", // Default role for new user
         });
 
         if (!user) {
