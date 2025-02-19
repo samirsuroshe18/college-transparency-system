@@ -6,6 +6,7 @@ const FacultyDashboard = () => {
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedDivision, setSelectedDivision] = useState("");
   const [announcements, setAnnouncements] = useState([]);
+  const [student, setStudent] = useState();
 
   const handlePostAnnouncement = () => {
     if (announcement) {
@@ -27,6 +28,20 @@ const FacultyDashboard = () => {
       <header className="flex justify-between items-center py-4 px-6 bg-black/20 rounded-xl shadow-md">
         <h1 className="text-2xl font-bold text-amber-500">Faculty Dashboard</h1>
       </header>
+
+      <section className="bg-black/20 p-6 rounded-xl shadow-md flex items-center gap-6">
+        <img
+          src={student.profilePic || "https://via.placeholder.com/100"}
+          alt="Profile"
+          className="w-20 h-20 rounded-full border-2 border-amber-500"
+        />
+        <div>
+          <h2 className="text-lg font-semibold text-amber-400">{student.name || "Student Name"}</h2>
+          <p className="text-sm text-gray-300">
+            {student.branch} | Year {student.year} | Division {student.division}
+          </p>
+        </div>
+      </section>
 
       {/* Announcement Section */}
       <section className="bg-black/20 p-6 rounded-xl shadow-md">
