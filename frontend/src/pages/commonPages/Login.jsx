@@ -58,6 +58,7 @@ const Login = () => {
     <div className="relative min-h-screen flex flex-col justify-center items-center bg-gradient-to-r from-[#131314] to-[#1C1C1E] text-white p-4 overflow-hidden">
       
       {/* Animated Background Waves */}
+      {/*ok*/}
       <motion.div 
         className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_left,_#1C1C1E_0%,_#131314_100%)] opacity-30"
         animate={{ opacity: [0.2, 0.4, 0.2] }}
@@ -68,6 +69,7 @@ const Login = () => {
         src={iitBombayLogo} 
         alt="IIT Bombay Logo" 
         className="w-50 h-24 mb-4" 
+        
         initial={{ opacity: 0, y: -20 }} 
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
