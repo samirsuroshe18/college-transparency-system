@@ -40,6 +40,10 @@ const userSchema = new Schema({
         type: String
     },
 
+    collegeId: { type: mongoose.Schema.Types.ObjectId, ref: "Student" },
+
+    department: { type: String },
+
     verifyToken: String,
     verifyTokenExpiry: Date,
     forgotPasswordToken: String,

@@ -20,25 +20,16 @@ const Login = () => {
   const handleSuccess = async (response) => {
     const token = response.credential;
     const decoded = jwtDecode(token);
-    let role = "student";
 
     try {
-      const res = await googleLoginUser(decoded, setLoading, dispatch);
-      dispatch(login(res.data));
-
-      if (res.data?.email === "admin@example.com") {
-        role = "admin";
-      }
-
-      navigate(role === "admin" ? '/admin-college' : '/student-dashboard');
+      const { userData, redirectTo } = await googleLoginUser(decoded, setLoading, dispatch);
+      dispatch(login(userData));
+      navigate(redirectTo); // Navigate based on user role
     } catch (error) {
       setLoading(false);
       dispatch(showNotificationWithTimeout({ show: true, type: "error", message: handleAxiosError(error) }));
-    } finally {
-      setLoading(false);
     }
   };
-
   const handleError = (error) => {
     dispatch(showNotificationWithTimeout({show:true, type:"error", message:handleAxiosError(error)}));
   };

@@ -4,6 +4,7 @@ import axiosInstance from './config.js';
 const googleLoginUser = async (token, setLoading, dispatch) => {
     setLoading(true);
     try {
+        // Step 1: Send login request
         const response = await axiosInstance.post(
             `/api/v1/user/google-login`,
             {
@@ -13,10 +14,21 @@ const googleLoginUser = async (token, setLoading, dispatch) => {
             },
             { withCredentials: true }
         );
+
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
+
+        // Step 2: Fetch current user to get their role-based redirect
+        const userResponse = await axiosInstance.get(`/api/v1/user/current-user`, { withCredentials: true });
+
         setLoading(false);
-        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
-        return response.data;
+
+        // Step 3: Return both user data & redirect path
+        return {
+            userData: response.data,
+            redirectTo: userResponse.data.data.redirectTo, // Extract redirect path
+        };
     } catch (error) {
+        setLoading(false);
         throw error;
     }
 };
