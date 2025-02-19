@@ -44,7 +44,7 @@ function App() {
       icon: <AnnouncementIcon />,
     },
     {
-      segment: 'elections',
+      segment: 'election',
       title: 'Elections',
       icon: <HowToVoteIcon />,
     },

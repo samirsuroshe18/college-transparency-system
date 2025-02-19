@@ -13,6 +13,8 @@ import StudentDashboard from "../pages/dashboards/StudentDashboard.jsx";
 import FacultyDashboard from "../pages/dashboards/FacultyDashboard.jsx";
 import WallOfShameAdmin from "../pages/cheating/WallOfShameAdmin.jsx";
 import StudentShame from "../pages/cheating/StudentShame.jsx";
+import StudentComplaint from "../pages/Complaints/StudentComplaint.jsx";
+import AdminComplain from "../pages/Complaints/AdminComplaint.jsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -40,6 +42,9 @@ const router = createBrowserRouter(
 
           <Route path="wallofshame" element={<StudentShame/>} />
           <Route path="admin-wallofshame" element={<WallOfShameAdmin/>} />
+
+          <Route path="complaints" element={<StudentComplaint/>} />
+          <Route path="admin-complaints" element={<AdminComplain/>} />
 
         </Route>
       </Route>
