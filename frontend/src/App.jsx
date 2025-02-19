@@ -105,12 +105,12 @@ function App() {
     },
     ...(userRole === 'admin'
       ? [
-          {
-            segment: 'config',
-            title: 'Config',
-            icon: <SettingsIcon />,
-          },
-        ]
+        {
+          segment: 'config',
+          title: 'Config',
+          icon: <SettingsIcon />,
+        },
+      ]
       : []),
   ];
 

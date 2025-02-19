@@ -2,6 +2,8 @@ import {login} from '../redux/slices/authSlice.js';
 import { showNotificationWithTimeout } from '../redux/slices/notificationSlice.js';
 import axiosInstance from './config.js'; 
 
+
+
 const googleLoginUser = async (token, setLoading, dispatch) => {
     setLoading(true);
     try {
@@ -17,11 +19,18 @@ const googleLoginUser = async (token, setLoading, dispatch) => {
 
         dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
 
-        // ✅ Fetch current user and store in Redux
+        // ✅ Fetch current user data after login
         const userResponse = await axiosInstance.get(`/api/v1/user/current-user`, { withCredentials: true });
-        dispatch(login(userResponse.data.data));
 
         setLoading(false);
+
+        // ✅ Store user data in Redux
+        dispatch(login(userResponse.data.data));
+
+        return {
+            userData: userResponse.data.data,
+            redirectTo: userResponse.data.data.redirectTo,
+        };
     } catch (error) {
         setLoading(false);
         throw error;

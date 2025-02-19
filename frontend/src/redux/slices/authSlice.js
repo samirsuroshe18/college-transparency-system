@@ -1,8 +1,8 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit"; // ✅ Make sure this is present
 
 const initialState = {
     status: false,
-    userData: null
+    userData: null, // ✅ Ensure this is initially null
 };
 
 const authSlice = createSlice({
@@ -11,15 +11,14 @@ const authSlice = createSlice({
     reducers: {
         login: (state, action) => {
             state.status = true;
-            state.userData = action.payload;
+            state.userData = action.payload || {}; // ✅ Ensure fallback object
         },
-        logout: (state) => {
-            state.status = false;
-            state.userData = null;
-        }
+        currentUser: (state, action) => {
+            state.status = true;
+            state.userData = action.payload || {}; // ✅ Ensure fallback object
+        },
     }
 });
 
-export const { login, logout } = authSlice.actions;
-
+export const { login, currentUser } = authSlice.actions;
 export default authSlice.reducer;

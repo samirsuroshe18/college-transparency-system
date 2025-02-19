@@ -4,6 +4,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 
 const StudentElectionPanel = () => {
   const [openModal, setOpenModal] = useState(false);
@@ -12,7 +13,7 @@ const StudentElectionPanel = () => {
   const [selectedElection, setSelectedElection] = useState(null);
   const [candidateName, setCandidateName] = useState("");
   const [department, setDepartment] = useState("");
-
+   const { userData } = useSelector((state) => state.auth); // 🟢 Fetch data from Redux
   const ongoingElections = [
     {
       title: "Class Representative - CMPN A",
@@ -50,7 +51,7 @@ const StudentElectionPanel = () => {
 
   const fetchUpcomingElections = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/v1/admin/elections/upcoming");
+      const response = await fetch("http://localhost:8000/api/v1/admin/elections/upcoming");
       const data = await response.json();
       setUpcomingElections(data);
     } catch (error) {
@@ -150,7 +151,7 @@ const StudentElectionPanel = () => {
             <label className="text-gray-300">Candidate Name</label>
             <Input
               type="text"
-              value={candidateName}
+              value={userData?.user?.name}
               onChange={(e) => setCandidateName(e.target.value)}
               placeholder="Enter your name"
               className="p-2 bg-[#222] border border-gray-500 rounded-lg text-white"
