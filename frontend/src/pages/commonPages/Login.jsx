@@ -18,18 +18,16 @@ const Login = () => {
   const handleSuccess = async (response) => {
     const token = response.credential;
     const decoded = jwtDecode(token);
+
     try {
-      const res = await googleLoginUser(decoded, setLoading, dispatch);
-      dispatch(login(res.data));
-      navigate('/');
+      const { userData, redirectTo } = await googleLoginUser(decoded, setLoading, dispatch);
+      dispatch(login(userData));
+      navigate(redirectTo); // Navigate based on user role
     } catch (error) {
       setLoading(false);
-      dispatch(showNotificationWithTimeout({show:true, type:"error", message:handleAxiosError(error)}));
-    } finally {
-      setLoading(false);
+      dispatch(showNotificationWithTimeout({ show: true, type: "error", message: handleAxiosError(error) }));
     }
   };
-
   const handleError = (error) => {
     dispatch(showNotificationWithTimeout({show:true, type:"error", message:handleAxiosError(error)}));
   };

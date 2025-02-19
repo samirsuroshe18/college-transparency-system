@@ -22,7 +22,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 
 const googleLogin = asyncHandler(async (req, res) => {
     const { name, email, profilePic } = req.body;
-    
+
     if (!name || !email || !profilePic) {
         throw new ApiError(400, "Please provide all the required fields");
     }
@@ -31,63 +31,56 @@ const googleLogin = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Access Denied");
     }
 
-    const existedUser = await User.findOne({ email });
+    let user = await User.findOne({ email });
 
-    if (!existedUser) {
-        const loggedInUser = await User.create({
+    if (!user) {
+        // New user created with default role
+        user = await User.create({
             name,
             email,
             profilePic,
             isGoogleVerified: true,
+            role: "student", // Default role for new user
         });
 
-        if (!loggedInUser) {
+        if (!user) {
             throw new ApiError(500, "Something went wrong");
         }
-    
-        const { accessToken, refreshToken } = await generateAccessAndRefreshToken(loggedInUser._id);
-
-        //option object is created beacause we dont want to modified the cookie to front side
-        const option = {
-            httpOnly: 'true' === process.env.HTTP_ONLY,
-            secure: 'true' === process.env.COOKIE_SECURE,
-            maxAge: Number(process.env.COOKIE_MAX_AGE),
-        }
-
-        return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
-            new ApiResponse(200, { loggedInUser, accessToken, refreshToken }, "User logged in sucessully")
-        );
-    }
-
-    const isUpdate = await User.findByIdAndUpdate(
-        existedUser._id,
-        {
-            $set: {
-                name: name,
-                profilePic: profilePic,
-                isGoogleVerified: true,
+    } else {
+        // Update existing user
+        user = await User.findByIdAndUpdate(
+            user._id,
+            {
+                $set: {
+                    name: name,
+                    profilePic: profilePic,
+                    isGoogleVerified: true,
+                },
             },
-            
-        },
-        { new: true }
-    ).select("-password")
+            { new: true }
+        ).select("-password");
 
-    if (!isUpdate) {
-        throw new ApiError(500, "Something went wrong");
+        if (!user) {
+            throw new ApiError(500, "Something went wrong");
+        }
     }
 
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(isUpdate._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-    //option object is created beacause we dont want to modified the cookie to front side
+    // Cookie options
     const option = {
         httpOnly: 'true' === process.env.HTTP_ONLY,
         secure: 'true' === process.env.COOKIE_SECURE,
         maxAge: Number(process.env.COOKIE_MAX_AGE),
-    }
+    };
 
-    return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
-        new ApiResponse(200, { isUpdate, accessToken, refreshToken }, "User logged in sucessully")
-    );
+    return res
+        .status(200)
+        .cookie('accessToken', accessToken, option)
+        .cookie('refreshToken', refreshToken, option)
+        .json(
+            new ApiResponse(200, { user, accessToken, refreshToken, redirectTo: user.role === "admin" ? "/admin-dashboard" : "/student-dashboard" }, "User logged in successfully")
+        );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -98,8 +91,16 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select("-password");
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    // Determine redirection based on user role
+    const redirectTo = user.role === "admin" ? "/admin-dashboard" : "/student-dashboard";
+
     return res.status(200).json(
-        new ApiResponse(200, req.user, "User session is Active")
+        new ApiResponse(200, { user, redirectTo }, "User session is Active")
     );
 });
 
