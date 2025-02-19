@@ -8,21 +8,21 @@ import NotFound from "../pages/commonPages/NotFound.jsx";
 import AdminPanel from "../pages/FacilityBooking/AdminPanel.jsx";
 import StudentElectionPanel from "../pages/StudentElection/Election.jsx";
 import AdminElectionPanel from "../pages/StudentElection/AdminElection.jsx";
-import VotingPage from "../pages/StudentElection/VotingPage.jsx";
-import AdminCollegePanel from "../pages/AdminCollegePanel.jsx";
+
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       <Route path="/" element={<App />}>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
+
           {/* Facility Booking Module Routes */}
           <Route path="dashboard" element={<FacilityDashboard />}>
             <Route path="facility" element={<FacilityDashboard />} />
             <Route path="admin" element={<AdminPanel />} />
           </Route>
-          <Route path="voting" element={<VotingPage />} />
-          <Route path="admin-college" element={<AdminCollegePanel />} />
+
+
           {/* Student Election Module Routes */}
           <Route path="election" element={<StudentElectionPanel />} />
           <Route path="admin-election" element={<AdminElectionPanel />} />
