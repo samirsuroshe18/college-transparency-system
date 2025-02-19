@@ -8,6 +8,13 @@ import NotFound from "../pages/commonPages/NotFound.jsx";
 import AdminPanel from "../pages/FacilityBooking/AdminPanel.jsx";
 import StudentElectionPanel from "../pages/StudentElection/Election.jsx";
 import AdminElectionPanel from "../pages/StudentElection/AdminElection.jsx";
+import AdminCollegePanel from "../pages/dashboards/AdminCollegePanel.jsx";
+import StudentDashboard from "../pages/dashboards/StudentDashboard.jsx";
+import FacultyDashboard from "../pages/dashboards/FacultyDashboard.jsx";
+import WallOfShameAdmin from "../pages/cheating/WallOfShameAdmin.jsx";
+import StudentShame from "../pages/cheating/StudentShame.jsx";
+import StudentComplaint from "../pages/Complaints/StudentComplaint.jsx";
+import AdminComplain from "../pages/Complaints/AdminComplaint.jsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -28,6 +35,16 @@ const router = createBrowserRouter(
           <Route path="admin-election" element={<AdminElectionPanel />} />
 
           {/* put remaining routes here... */}
+          <Route path="college-dashboard" element={<AdminCollegePanel/>} />
+          <Route path="student-dashboard" element={<StudentDashboard/>} />
+          <Route path="admin-dashboard" element={<StudentDashboard/>} />
+          <Route path="faculty-dashboard" element={<FacultyDashboard/>} />
+
+          <Route path="wallofshame" element={<StudentShame/>} />
+          <Route path="admin-wallofshame" element={<WallOfShameAdmin/>} />
+
+          <Route path="complaints" element={<StudentComplaint/>} />
+          <Route path="admin-complaints" element={<AdminComplain/>} />
 
         </Route>
       </Route>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, Typography, Avatar, Grid } from "@mui/material";
 import CampaignIcon from "@mui/icons-material/Campaign";
+import { amber } from "@mui/material/colors";
 
 const StudentShame = () => {
   const [students] = useState([
@@ -41,7 +42,7 @@ const StudentShame = () => {
                 <Typography variant="body2">
                   <strong>Roll No:</strong> {student.rollNo} | <strong>Class:</strong> {student.class} | <strong>Branch:</strong> {student.branch}
                 </Typography>
-                <Typography color="error"><strong>Remark:</strong> {student.remark}</Typography>
+                <Typography color={amber[600]}><strong>Remark:</strong> {student.remark}</Typography>
               </Grid>
             </Grid>
           </CardContent>

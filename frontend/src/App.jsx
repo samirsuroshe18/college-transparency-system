@@ -10,6 +10,7 @@ import EventIcon from '@mui/icons-material/Event';
 import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import { Outlet } from 'react-router';
 import { extendTheme } from '@mui/material/styles';
+import GavelIcon from "@mui/icons-material/Gavel";
 
 const BRANDING = {
   title: 'CollegeConnect',
@@ -81,12 +82,12 @@ function App() {
     {
       segment: 'wallofshame',
       title: 'Wall of Shame',
-      icon: <ReportProblemIcon />,
+      icon: <GavelIcon />,
     },
     {
       segment: 'admin-wallofshame',
       title: 'Wall of Shame',
-      icon: <ReportProblemIcon />,
+      icon: <GavelIcon />,
     },
     {
       segment: 'complaints',
