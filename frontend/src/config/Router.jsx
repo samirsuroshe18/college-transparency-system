@@ -35,6 +35,16 @@ const router = createBrowserRouter(
           <Route path="admin-election" element={<AdminElectionPanel />} />
 
           {/* put remaining routes here... */}
+          <Route path="college-dashboard" element={<AdminCollegePanel/>} />
+          <Route path="student-dashboard" element={<StudentDashboard/>} />
+          <Route path="admin-dashboard" element={<StudentDashboard/>} />
+          <Route path="faculty-dashboard" element={<FacultyDashboard/>} />
+
+          <Route path="wallofshame" element={<StudentShame/>} />
+          <Route path="admin-wallofshame" element={<WallOfShameAdmin/>} />
+
+          <Route path="complaints" element={<StudentComplaint/>} />
+          <Route path="admin-complaints" element={<AdminComplain/>} />
 
         </Route>
       </Route>
