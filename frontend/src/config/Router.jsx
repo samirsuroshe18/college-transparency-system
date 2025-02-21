@@ -19,7 +19,8 @@ import WallOfShameAdmin from "../pages/cheating/WallOfShameAdmin.jsx";
 import StudentShame from "../pages/cheating/StudentShame.jsx";
 import StudentComplaint from "../pages/Complaints/StudentComplaint.jsx";
 import AdminComplain from "../pages/Complaints/AdminComplaint.jsx";
-
+import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
+import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -60,6 +61,8 @@ const router = createBrowserRouter(
       <Route path="/student-profile" element={<StudentProfileFormScreen />} />
       <Route path="/faculty-profile" element={<FacultyProfileFormScreen />} />
       <Route path="*" element={<NotFound />} />
+      <Route path="/application-page" element={<ApplicationManagement />} />
+      <Route path="/admin-application" element={<AdminApplication/>}/>
     </>
   )
 );
