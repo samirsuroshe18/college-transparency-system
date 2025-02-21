@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import Complaint from "../../models/ComplaintModule/complaint.model.js";
 import axios from "axios";
+import { uploadOnCloudinary } from '../../utils/cloudinary.js';
 
 const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY; // Ensure this is set in your .env
 
@@ -51,6 +52,13 @@ export async function submitComplaint(req, res) {
         }
 
         const userId = isAnonymous ? null : req.user?._id;
+
+        const file = req.file.path;
+        const path = await uploadOnCloudinary(file);
+
+        if (!path?.url) {
+            throw new ApiError(500, "Failed to upload image ");
+        }
 
         const newComplaint = new Complaint({
             title,
