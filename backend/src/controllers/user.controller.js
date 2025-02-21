@@ -2,7 +2,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { User } from '../models/user.model.js';
-import { uploadOnCloudinary } from '../utils/cloudinary.js'
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -59,23 +59,7 @@ const googleLogin = asyncHandler(async (req, res) => {
         );
     }
 
-    const isUpdate = await User.findByIdAndUpdate(
-        existedUser._id,
-        {
-            $set: {
-                name: name,
-                profilePic: profilePic,
-                isGoogleVerified: true,
-            }
-        },
-        { new: true }
-    );
-
-    if (!isUpdate) {
-        throw new ApiError(500, "Something went wrong");
-    }
-
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(isUpdate._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(existedUser._id);
 
     //option object is created beacause we dont want to modified the cookie to front side
     const option = {
@@ -106,6 +90,7 @@ const addStudentProfile = asyncHandler(async (req, res) => {
     const { fullName, email, studentId, department, year } = req.body;
 
     const file = req.file.path;
+
     const path = await uploadOnCloudinary(file);
 
     if (!path?.url) {
@@ -120,7 +105,7 @@ const addStudentProfile = asyncHandler(async (req, res) => {
                 email,
                 studentId,
                 department,
-                year,
+                currentYear:year,
                 idProof: path?.url,
                 profileStatus: "Pending",
                 role: "student"
@@ -176,14 +161,13 @@ const addFacultyProfile = asyncHandler(async (req, res) => {
 });
 
 // Get all pending student profiles
-const getPendingStudentProfiles = async (req, res) => {
-    try {
-        const pendingStudents = await User.find({ role: "student", status: "Pending" });
-        res.status(200).json(pendingStudents);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching pending student profiles", error });
-    }
-};
+const getPendingStudentProfiles = asyncHandler(async (req, res) => {
+    const pendingStudents = await User.find({ role: "student", status: "Pending" });
+    
+    return res.status(200).json(
+      new ApiResponse(200, pendingStudents, "Facility fetched successfully.")
+    )
+  });
 
 // Get all rejected student profiles
 const getRejectedStudentProfiles = async (req, res) => {

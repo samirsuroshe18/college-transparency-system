@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addFacultyProfile, addStudentProfile, getCurrentUser, googleLogin, logoutUser,} from "../controllers/user.controller.js";
+import { addFacultyProfile, addStudentProfile, getCurrentUser, getPendingStudentProfiles, googleLogin, logoutUser,} from "../controllers/user.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
@@ -10,5 +10,6 @@ router.route("/current-user").get(verifyJwt, getCurrentUser);
 router.route("/logout").get(verifyJwt, logoutUser);
 router.route("/add-student-profile").post(verifyJwt, upload.single("proofImage"), addStudentProfile);
 router.route("/add-faculty-profile").post(verifyJwt, upload.single("proofImage"), addFacultyProfile);
+router.route("/get-pending-students").get(verifyJwt, getPendingStudentProfiles);
 
 export default router;

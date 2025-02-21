@@ -22,9 +22,9 @@ const Login = () => {
     const decoded = jwtDecode(token);
 
     try {
-      const { userData, redirectTo } = await googleLoginUser(decoded, setLoading, dispatch);
-      dispatch(login(userData));
-      navigate(redirectTo); // Navigate based on user role
+      const res = await googleLoginUser(decoded, setLoading, dispatch);
+      dispatch(login(res.data));
+      navigate('/');
     } catch (error) {
       setLoading(false);
       dispatch(showNotificationWithTimeout({ show: true, type: "error", message: handleAxiosError(error) }));

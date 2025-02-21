@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { addStudentProfile } from '../../api/authApi';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { currentUser } from '../../redux/slices/authSlice';
 import { showNotificationWithTimeout } from '../../redux/slices/notificationSlice';
@@ -10,6 +10,7 @@ const SimpleStudentForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const user = useSelector((state) => state.auth.userData);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -49,14 +50,16 @@ const SimpleStudentForm = () => {
     console.log("Form submitted:", formData);
     try {
       const res = await addStudentProfile(formData, setLoading, dispatch);
+      console.log("Student profile added:", res.data);
       dispatch(currentUser(res.data));
-      if(res.data.data.profileStatus === "Pending") {
+      if(res.data.profileStatus === "Pending") {
         navigate("/profile-pending");
       } else {
         navigate("/");
       }
       navigate("/");
     } catch (error) {
+      console.log("Error adding student profile:", handleAxiosError(error));
       setLoading(false);
       dispatch(
         showNotificationWithTimeout({
@@ -83,6 +86,7 @@ const SimpleStudentForm = () => {
               <input
                 type="text"
                 name="fullName"
+                value={user.name}
                 onChange={handleChange}
                 className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Enter your full name"
@@ -95,6 +99,7 @@ const SimpleStudentForm = () => {
                 type="email"
                 name="email"
                 onChange={handleChange}
+                value={user.email}
                 className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="your.email@example.com"
                 readOnly
