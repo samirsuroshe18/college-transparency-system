@@ -10,6 +10,12 @@ import EventIcon from '@mui/icons-material/Event';
 import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import { Outlet } from 'react-router';
 import { extendTheme } from '@mui/material/styles'
+import GavelIcon from "@mui/icons-material/Gavel";
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import LayersIcon from '@mui/icons-material/Layers';
+import DescriptionIcon from '@mui/icons-material/Description';
+
 
 const NAVIGATION = [
   {
@@ -56,8 +62,6 @@ const NAVIGATION = [
     icon: <LayersIcon />,
   },
 ];
-import { extendTheme } from '@mui/material/styles';
-import GavelIcon from "@mui/icons-material/Gavel";
 
 const BRANDING = {
   title: 'CollegeConnect',
