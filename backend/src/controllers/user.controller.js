@@ -2,6 +2,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { User } from '../models/user.model.js';
+import {uploadOnCloudinary} from '../utils/cloudinary.js'
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -22,7 +23,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 
 const googleLogin = asyncHandler(async (req, res) => {
     const { name, email, profilePic } = req.body;
-    
+
     if (!name || !email || !profilePic) {
         throw new ApiError(400, "Please provide all the required fields");
     }
@@ -44,7 +45,7 @@ const googleLogin = asyncHandler(async (req, res) => {
         if (!loggedInUser) {
             throw new ApiError(500, "Something went wrong");
         }
-    
+
         const { accessToken, refreshToken } = await generateAccessAndRefreshToken(loggedInUser._id);
 
         //option object is created beacause we dont want to modified the cookie to front side
@@ -66,8 +67,7 @@ const googleLogin = asyncHandler(async (req, res) => {
                 name: name,
                 profilePic: profilePic,
                 isGoogleVerified: true,
-            },
-            
+            }
         },
         { new: true }
     ).select("-password")
@@ -103,8 +103,87 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     );
 });
 
+// {
+//     runValidators: false
+// },
+
+const addStudentProfile = asyncHandler(async (req, res) => {
+    const { fullName, email, studentId, department, year } = req.body;
+
+    const file = req.file.path;
+    const path = await uploadOnCloudinary(file);
+
+    if (!path?.url) {
+        throw new ApiError(500, "Failed to upload company logo");
+    }
+
+    const student = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                name: fullName,
+                email,
+                studentId,
+                department,
+                year,
+                idProof: path?.url,
+                profileStatus: "Pending",
+                role: "student"
+            }
+        },
+        { new: true }
+    )
+
+    if (!student) {
+        throw new ApiError(500, "Something went wrong");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, student, "Form submited successfully")
+    );
+});
+
+const addFacultyProfile = asyncHandler(async (req, res) => {
+    const { fullName, email, employeeId, department, designation } = req.body;
+
+    const file = req.file.path;
+    
+    const path = await uploadOnCloudinary(file);
+    
+    if (!path?.url) {
+        throw new ApiError(500, "Failed to upload company logo");
+    }
+
+    const faculty = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                name: fullName,
+                email,
+                employeeId,
+                department,
+                designation,
+                idProof: path?.url,
+                profileStatus: "Pending",
+                role: "faculty"
+            }
+        },
+        { new: true }
+    )
+
+    if (!faculty) {
+        throw new ApiError(500, "Something went wrong");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, faculty, "Form submited successfully")
+    );
+});
+
 export {
     googleLogin,
     logoutUser,
     getCurrentUser,
+    addStudentProfile,
+    addFacultyProfile
 }

@@ -67,6 +67,67 @@ const loginUser = async (formData, setLoading, dispatch) => {
     }
 };
 
-export { googleLoginUser, logoutUser, getCurrentUser, loginUser }
+const addStudentProfile = async (formData, setLoading, dispatch) => {
+    setLoading(true);
+    try {
+        const form = new FormData();
+
+        form.append("proofImage", formData.proofImage);
+        form.append("fullName", formData.fullName);
+        form.append("email", formData.email);
+        form.append("studentId", formData.studentId);
+        form.append("department", formData.department);
+        form.append("year", formData.year);
+
+        const response = await axiosInstance.post(
+            `/api/v1/user/add-student-profile`, 
+            form,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+                withCredentials: true
+            }
+        );
+        setLoading(false);
+        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        return response;
+    } catch (error) {
+        throw error
+    }
+};
+
+const addFacultyProfile = async (formData, setLoading, dispatch) => {
+    setLoading(true);
+    try {
+        const form = new FormData();
+        console.log("payload Data",formData)
+        console.log("payload Image",formData.image)
+        form.append("proofImage", formData.image);
+        form.append("fullName", formData.fullName);
+        form.append("email", formData.email);
+        form.append("employeeId", formData.employeeId);
+        form.append("department", formData.department);
+        form.append("designation", formData.designation);
+
+        const response = await axiosInstance.post(
+            `/api/v1/user/add-faculty-profile`, 
+            form,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+                withCredentials: true
+            }
+        );
+        setLoading(false);
+        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        return response;
+    } catch (error) {
+        throw error
+    }
+};
+
+export { googleLoginUser, logoutUser, getCurrentUser, loginUser, addFacultyProfile, addStudentProfile }
 
 

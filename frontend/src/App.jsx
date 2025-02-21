@@ -47,11 +47,11 @@ const NAVIGATION = [
       },
     ],
   },
-  // {
-  //   segment: 'integrations',
-  //   title: 'Integrations',
-  //   icon: <LayersIcon />,
-  // },
+  {
+    segment: 'pending-request',
+    title: 'Requests',
+    icon: <LayersIcon />,
+  },
 ];
 
 const BRANDING = {

@@ -78,40 +78,6 @@ const getFacilities = async (setLoading, dispatch) => {
     }
 };
 
-
-// Multipart Request Example :
-
-// const addTenant = async (formData) => {
-//     try {
-//         const form = new FormData();
-//         console.log('formData:', typeof formData.profile);
-//         form.append("name", formData.name);
-//         form.append("address", formData.address);
-//         form.append("mobile", formData.mobile);
-//         form.append("profile", formData.profile);
-
-//         const response = await axiosInstance.post(
-//             `/api/v1/tenant/add-tenant`, 
-//             form,
-//             {
-//                 headers: {
-//                     "Content-Type": "multipart/form-data",
-//                 },
-//                 withCredentials: true
-//             }
-//         );
-//         // const response = await axiosInstance.post(
-//         //     `/api/v1/tenant/add-tenant`,
-//         //     formData,
-//         //     {withCredentials: true}
-//         // );
-//         return response;
-//     } catch (error) {
-//         console.error('Error while api request:', error);
-//         throw error;
-//     }
-// };
-
 export { createBooking, getBookings, updateBooking, createFacilities, getFacilities }
 
 

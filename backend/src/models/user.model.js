@@ -5,35 +5,64 @@ import bcrypt from 'bcrypt';
 const userSchema = new Schema({
     name: {
         type: String,
-        required: true,
         trim: true,
     },
 
     email: {
         type: String,
-        required: true,
         trim: true,
         unique: true,
-        lowercase: true
+        lowercase: true,
     },
 
     profilePic: {
         type: String,
     },
+    
+    phoneNumber: { type: String,  },
+    dateOfBirth: { type: Date,  },
+    gender: { type: String, enum: ["Male", "Female", "Other"],  },
 
-    password: {
+    role: {
         type: String,
+        enum: ["student", "faculty", "admin"],
+        default: "student"
+    },
+
+    // Fields specific to Students
+    studentId: { type: String, unique: true, sparse: true },
+    course: { type: String },
+    department: { type: String },
+    year: { type: Number },
+    semester: { type: Number },
+    classDivision: { type: String },
+    rollNumber: { type: String },
+    hostelStatus: { type: String, enum: ["Hostel", "Day Scholar"] },
+
+    // Fields specific to Faculty
+    employeeId: { type: String, unique: true, sparse: true},
+    department: { type: String },
+    designation: { type: String },
+    joiningDate: { type: Date },
+    qualification: { type: String },
+    subjectsTaught: [{ type: String }],
+    officeRoomNumber: { type: String },
+
+    // Common Fields
+    address: { type: String },
+    emergencyContact: { type: String },
+    profilePicture: { type: String }, // URL of profile picture
+    idProof: { type: String }, // URL of ID proof document
+
+    profileStatus: {
+        type: String,
+        enum: ["Pending", "Rejected", "Approved", "NotFilled"],
+        default: "NotFilled",
     },
 
     isGoogleVerified: {
         type: Boolean,
         default: false,
-    },
-
-    role: { 
-        type: String, 
-        enum: ["student", "faculty", "admin"], 
-        default: "student" 
     },
 
     refreshToken: {
