@@ -23,7 +23,7 @@ const StudentElectionPanel = () => {
 
   const fetchElections = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/v1/admin/elections/upcoming");
+      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/upcoming`);
       const data = await response.json();
 
       const today = new Date();
@@ -52,7 +52,7 @@ const StudentElectionPanel = () => {
     if (!userData?.user?._id) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/applications/user/${userData.user._id}`);
+      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/applications/user/${userData.user._id}`);
       const data = await response.json();
       setUserApplications(data || []);
     } catch (error) {
@@ -91,7 +91,7 @@ const StudentElectionPanel = () => {
     };
 
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/applications/${selectedElectionId}/apply`, {
+      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/applications/${selectedElectionId}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
