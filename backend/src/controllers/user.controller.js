@@ -181,5 +181,4 @@ export {
     getCurrentUser,
     addStudentProfile,
     addFacultyProfile,
-    logoutUser,
 }
