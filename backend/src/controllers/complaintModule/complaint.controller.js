@@ -37,6 +37,14 @@ export async function submitComplaint(req, res) {
         console.log("📥 Received Payload:", req.body);
         const { title, description, isAnonymous, revealThreshold } = req.body;
 
+        const file = req.file.path;
+        const path = await uploadOnCloudinary(file);
+
+        if (!path?.url) {
+            throw new ApiError(500, "Failed to upload image ");
+        }
+
+
         if (!title || !description) {
             return res.status(400).json({ message: "Title and description are required" });
         }
@@ -53,20 +61,16 @@ export async function submitComplaint(req, res) {
 
         const userId = isAnonymous ? null : req.user?._id;
 
-        const file = req.file.path;
-        const path = await uploadOnCloudinary(file);
-
-        if (!path?.url) {
-            throw new ApiError(500, "Failed to upload image ");
-        }
 
         const newComplaint = new Complaint({
             title,
             description,
             isAnonymous: isAnonymous || false,
             userId,
-            revealThreshold: revealThreshold || 5
+            revealThreshold: revealThreshold || 5,
+            imagevideo: path.url
         });
+
 
         await newComplaint.save();
 
@@ -77,7 +81,8 @@ export async function submitComplaint(req, res) {
                 title: newComplaint.title,
                 description: newComplaint.description,
                 isAnonymous: newComplaint.isAnonymous,
-                revealThreshold: newComplaint.revealThreshold
+                revealThreshold: newComplaint.revealThreshold,
+                imagevideo: newComplaint.imagevideo
             }
         });
     } catch (error) {
