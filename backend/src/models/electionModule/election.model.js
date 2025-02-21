@@ -6,7 +6,11 @@ const ElectionSchema = new mongoose.Schema({
   applicationDeadline: { type: Date, required: true },
   ended: { type: Boolean, default: false },
   winner: { type: String, default: null },
+  votingCriteria: {  
+    branch: { type: String, required: false  },
+    year: { type: String, required: false  },
+    division: { type: String, required: false}
+  }
 });
-
 const Election = mongoose.model("Election", ElectionSchema);
 export default Election;

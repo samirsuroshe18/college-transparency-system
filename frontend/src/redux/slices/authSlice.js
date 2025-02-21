@@ -1,11 +1,9 @@
-import { createSlice } from "@reduxjs/toolkit";
-
-// you cannot pass multiple parameters like login(true, {}). The createSlice reducers always receive one argument: action, which contains payload
+import { createSlice } from "@reduxjs/toolkit"; // ✅ Make sure this is present
 
 const initialState = {
     status: false,
-    userData: null
-}
+    userData: null, // ✅ Ensure this is initially null
+};
 
 const authSlice = createSlice({
     name: "auth",
@@ -13,15 +11,14 @@ const authSlice = createSlice({
     reducers: {
         login: (state, action) => {
             state.status = true;
-            state.userData = action.payload;
+            state.userData = action.payload || {}; // ✅ Ensure fallback object
         },
         currentUser: (state, action) => {
             state.status = true;
-            state.userData = action.payload;
+            state.userData = action.payload || {}; // ✅ Ensure fallback object
         },
     }
-})
+});
 
 export const { login, currentUser } = authSlice.actions;
-
 export default authSlice.reducer;

@@ -1,185 +1,210 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 const StudentElectionPanel = () => {
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
-  const [applyModal, setApplyModal] = useState(false);
-  const [selectedElection, setSelectedElection] = useState(null);
-  const [candidateName, setCandidateName] = useState("");
-  const [department, setDepartment] = useState("");
-
-  const ongoingElections = [
-    {
-      title: "Class Representative - CMPN A",
-      candidates: [
-        { name: "Rahul Sharma", agenda: "Improve sports facilities" },
-        { name: "Priya Verma", agenda: "Organize more tournaments" },
-      ],
-    },
-    {
-      title: "Sports Secretary",
-      candidates: [
-        { name: "Amit Khanna", agenda: "Upgrade gym and sports equipment" },
-        { name: "Neha Gupta", agenda: "Host more inter-college competitions" },
-      ],
-    },
-    {
-      title: "Cultural Coordinator",
-      candidates: [
-        { name: "Sanya Mehta", agenda: "Organize more cultural fests" },
-        { name: "Kunal Desai", agenda: "Promote regional arts and music" },
-      ],
-    },
-  ];
-
-  const handleVoteClick = (candidate) => {
-    setSelectedCandidate(candidate);
-    setOpenModal(true);
-  };
-
-  const [upcomingElections, setUpcomingElections] = useState([]);
+  const { userData } = useSelector((state) => state.auth);
+  const [elections, setElections] = useState([]);
+  const [liveElections, setLiveElections] = useState([]);
+  const [userApplications, setUserApplications] = useState([]);
+  const [isApplying, setIsApplying] = useState(false);
+  const [applicationData, setApplicationData] = useState({ agenda: "", experience: "" });
+  const [selectedElectionId, setSelectedElectionId] = useState(null);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
-    fetchUpcomingElections();
+    fetchElections();
+    fetchUserApplications();
   }, []);
 
-  const fetchUpcomingElections = async () => {
+  const fetchElections = async () => {
     try {
       const response = await fetch("http://localhost:3000/api/v1/admin/elections/upcoming");
       const data = await response.json();
-      setUpcomingElections(data);
+
+      const today = new Date();
+      const upcoming = [];
+      const live = [];
+
+      data.forEach((election) => {
+        const deadline = new Date(election.applicationDeadline);
+        if (deadline < today) {
+          live.push(election);
+        } else {
+          upcoming.push(election);
+        }
+      });
+
+      setElections(upcoming);
+      setLiveElections(live);
     } catch (error) {
-      console.error("Error fetching upcoming elections:", error);
+      console.error("Error fetching elections:", error);
+      setElections([]);
+      setLiveElections([]);
     }
   };
 
-  const handleApplyClick = (election) => {
-    setSelectedElection(election);
-    setApplyModal(true);
+  const fetchUserApplications = async () => {
+    if (!userData?.user?._id) return;
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/v1/applications/user/${userData.user._id}`);
+      const data = await response.json();
+      setUserApplications(data || []);
+    } catch (error) {
+      console.error("Error fetching user applications:", error);
+      setUserApplications([]);
+    }
   };
 
-  const applyForElection = async () => {
-    if (!candidateName || !department) {
-      alert("Please fill all fields!");
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(dateString));
+  };
+
+  const handleApplyClick = (electionId) => {
+    setSelectedElectionId(electionId);
+    setIsApplying(true);
+  };
+
+  const handleApplySubmit = async () => {
+    if (!userData?.user) {
+      setError("User not logged in.");
       return;
     }
 
+    const payload = {
+      electionId: selectedElectionId,
+      userId: userData.user._id,
+      name: userData.user.name,
+      class: userData.user.class || "N/A",
+      agenda: applicationData.agenda,
+      experience: applicationData.experience,
+    };
+
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/candidates/${selectedElection._id}/candidate`, {
+      const response = await fetch(`http://localhost:3000/api/v1/applications/${selectedElectionId}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: candidateName, department }),
+        body: JSON.stringify(payload),
       });
-      const data = await response.json();
-      alert(data.message);
-      setApplyModal(false);
-      setCandidateName("");
-      setDepartment("");
+
+      const result = await response.json();
+      if (response.ok) {
+        setSuccess("Application submitted! Waiting for admin approval.");
+        setIsApplying(false);
+        setApplicationData({ agenda: "", experience: "" });
+        fetchUserApplications();
+      } else {
+        setError(result.message || "Failed to submit application.");
+      }
     } catch (error) {
-      console.error("Error applying for election:", error);
+      console.error("Error submitting application:", error);
+      setError("Server Error.");
     }
+  };
+
+  // ✅ Function to check if the user has already applied
+  const hasUserApplied = (electionId) => {
+    return userApplications.some((app) => app.electionId === electionId);
   };
 
   return (
     <div className="min-h-screen bg-[#131314] text-white p-6">
       <h1 className="text-3xl font-bold text-amber-500">Student Election Panel</h1>
 
-      <header className="flex justify-between items-center py-4 px-6 bg-black/20 rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold text-amber-500">Upcoming Elections</h1>
-      </header>
-
-      <section className="bg-black/20 p-6 rounded-xl shadow-md">
-        {upcomingElections.length === 0 ? (
-          <p className="text-gray-400">No upcoming elections.</p>
-        ) : (
-          upcomingElections.map((election) => (
-            <div key={election._id} className="bg-black/30 p-4 rounded-lg mt-4">
-              <h3 className="text-lg font-medium">{election.title}</h3>
-              <p className="text-gray-400">Election Date: {election.electionDate}</p>
-              <Button
-                onClick={() => handleApplyClick(election)}
-                className="mt-2 bg-amber-500 px-4 py-2 rounded-lg font-semibold hover:bg-amber-400 transition"
-              >
-                Apply as Candidate
-              </Button>
-            </div>
-          ))
-        )}
-      </section>
-
-      {/* Ongoing Elections */}
-      <section className="mt-6">
-        <h2 className="text-lg font-semibold text-amber-400">Ongoing Elections</h2>
+      {/* 📅 Upcoming Elections */}
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold text-amber-400">Upcoming Elections</h2>
         <Accordion type="single" collapsible>
-          {ongoingElections.map((election, index) => (
-            <AccordionItem key={index} value={`election-${index}`} className="mt-4">
-              <AccordionTrigger className="bg-[#1a1a1d] p-4 text-left text-gray-300 font-semibold rounded-xl shadow-md border-0">
-                {election.title}
-              </AccordionTrigger>
-              <AccordionContent className="p-5 bg-[#1a1a1d] rounded-xl mt-2 shadow-md">
-                {election.candidates.map((candidate, idx) => (
-                  <div key={idx} className="mt-4 bg-[#222] p-4 rounded-lg shadow-md">
-                    <p className="text-lg text-gray-300 font-semibold">{candidate.name}</p>
-                    <p className="text-gray-400">{candidate.agenda}</p>
-                    <Button
-                      onClick={() => handleVoteClick(candidate)}
-                      className="mt-2 bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg shadow-md"
-                    >
-                      Vote
+          {elections.length > 0 ? (
+            elections.map((election, index) => (
+              <AccordionItem key={index} value={`upcoming-${index}`} className="mt-4">
+                <AccordionTrigger className="bg-[#1a1a1d] p-4 text-left text-gray-300 font-semibold rounded-xl shadow-md border-0">
+                  {election.title}
+                </AccordionTrigger>
+                <AccordionContent className="p-5 bg-[#1a1a1d] rounded-xl mt-2 shadow-md">
+                  <p className="text-gray-400">
+                    Applications open until <span className="text-amber-300 font-medium">{formatDate(election.applicationDeadline)}</span>
+                  </p>
+
+                  {/* ✅ Disable Apply button if the user has already applied */}
+                  {hasUserApplied(election._id) ? (
+                    <Button disabled className="mt-2 bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md">
+                      Already Applied
                     </Button>
-                  </div>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
+                  ) : (
+                    <Button onClick={() => handleApplyClick(election._id)} className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md">
+                      Apply Now
+                    </Button>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            ))
+          ) : (
+            <p className="text-gray-500 mt-4">No upcoming elections.</p>
+          )}
         </Accordion>
       </section>
 
-      {/* Apply Modal */}
-      <Dialog open={applyModal} onOpenChange={setApplyModal}>
-        <DialogContent className="bg-[#1a1a1d] rounded-lg shadow-lg text-white w-[90%] max-w-md p-6">
-          <DialogHeader>
-            <h2 className="text-xl font-semibold">Apply for {selectedElection?.title}</h2>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <label className="text-gray-300">Candidate Name</label>
-            <Input
-              type="text"
-              value={candidateName}
-              onChange={(e) => setCandidateName(e.target.value)}
-              placeholder="Enter your name"
-              className="p-2 bg-[#222] border border-gray-500 rounded-lg text-white"
-            />
-            <label className="text-gray-300">Department</label>
-            <Input
-              type="text"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              placeholder="Enter your department"
-              className="p-2 bg-[#222] border border-gray-500 rounded-lg text-white"
-            />
-          </div>
-          <DialogFooter className="mt-4 flex justify-end gap-4">
-            <Button
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md"
-              onClick={() => setApplyModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg shadow-md"
-              onClick={applyForElection}
-            >
-              Submit Application
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* 📝 Apply Modal */}
+      {isApplying && (
+        <Dialog open={isApplying} onOpenChange={setIsApplying}>
+          <DialogContent className="bg-[#1a1a1d] border border-gray-700 text-white p-6 rounded-lg">
+            <DialogHeader>
+              <h3 className="text-lg font-bold text-gray-300">Apply as Candidate</h3>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <Input value={userData.user.name} readOnly className="bg-[#2a2a2d] text-gray-300 border border-gray-600 px-3 py-2 w-full rounded-lg" />
+              <Input placeholder="Your Agenda..." onChange={(e) => setApplicationData({ ...applicationData, agenda: e.target.value })} className="bg-[#2a2a2d] text-gray-300 border border-gray-600 px-3 py-2 w-full rounded-lg" />
+              <textarea placeholder="Your Experience..." onChange={(e) => setApplicationData({ ...applicationData, experience: e.target.value })} className="bg-[#2a2a2d] text-gray-300 border border-gray-600 px-3 py-2 w-full rounded-lg h-24 resize-none" />
+            </div>
+
+            <DialogFooter className="mt-4">
+              <Button onClick={handleApplySubmit} className="bg-blue-500 hover:bg-blue-600 w-full">
+                Submit Application
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* 📌 Live Elections Section */}
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold text-green-400">Live Elections</h2>
+        <Accordion type="single" collapsible>
+          {liveElections.length > 0 ? (
+            liveElections.map((election, index) => (
+              <AccordionItem key={index} value={`live-${index}`} className="mt-4">
+                <AccordionTrigger className="bg-[#1a1a1d] p-4 text-left text-gray-300 font-semibold rounded-xl shadow-md border-0">
+                  {election.title}
+                </AccordionTrigger>
+                <AccordionContent className="p-5 bg-[#1a1a1d] rounded-xl mt-2 shadow-md">
+                  <p className="text-gray-400">
+                    Voting ends on{" "}
+                    <span className="text-green-300 font-medium">{formatDate(election.votingDeadline)}</span>
+                  </p>
+                  <Button className="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-md">
+                    Vote Now
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+            ))
+          ) : (
+            <p className="text-gray-500 mt-4">No live elections at the moment.</p>
+          )}
+        </Accordion>
+      </section>
+
     </div>
   );
 };

@@ -39,7 +39,6 @@ const googleLogin = asyncHandler(async (req, res) => {
             name,
             email,
             profilePic,
-            isGoogleVerified: true,
         });
 
         if (!loggedInUser) {
@@ -70,7 +69,7 @@ const googleLogin = asyncHandler(async (req, res) => {
             }
         },
         { new: true }
-    ).select("-password")
+    );
 
     if (!isUpdate) {
         throw new ApiError(500, "Something went wrong");
@@ -102,10 +101,6 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         new ApiResponse(200, req.user, "User session is Active")
     );
 });
-
-// {
-//     runValidators: false
-// },
 
 const addStudentProfile = asyncHandler(async (req, res) => {
     const { fullName, email, studentId, department, year } = req.body;
@@ -185,5 +180,6 @@ export {
     logoutUser,
     getCurrentUser,
     addStudentProfile,
-    addFacultyProfile
+    addFacultyProfile,
+    logoutUser,
 }

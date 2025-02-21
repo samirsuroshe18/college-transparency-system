@@ -25,4 +25,24 @@ const verifyJwt = asyncHandler(async(req, _, next) => {
     }
 })
 
-export{verifyJwt};
+
+
+
+// Admin route protection
+export const isAdmin = (req, res, next) => {
+    if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Access Denied: Admins only" });
+    }
+    next();
+};
+
+// Student route protection
+export const isStudent = (req, res, next) => {
+    if (req.user.role !== "student") {
+        return res.status(403).json({ message: "Access Denied: Students only" });
+    }
+    next();
+};
+
+
+export { verifyJwt };

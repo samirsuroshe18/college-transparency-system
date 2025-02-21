@@ -12,6 +12,13 @@ import SelectRoleScreen from "../pages/commonPages/SelectRoleScreen.jsx";
 import StudentProfileFormScreen from "../pages/commonPages/StudentProfileFormScreen.jsx";
 import FacultyProfileFormScreen from "../pages/commonPages/FacultyProfileFormScreen.jsx";
 import PendingProfilesPage from "../pages/commonPages/PendingProfilePage.jsx";
+import AdminCollegePanel from "../pages/dashboards/AdminCollegePanel.jsx";
+import StudentDashboard from "../pages/dashboards/StudentDashboard.jsx";
+import FacultyDashboard from "../pages/dashboards/FacultyDashboard.jsx";
+import WallOfShameAdmin from "../pages/cheating/WallOfShameAdmin.jsx";
+import StudentShame from "../pages/cheating/StudentShame.jsx";
+import StudentComplaint from "../pages/Complaints/StudentComplaint.jsx";
+import AdminComplain from "../pages/Complaints/AdminComplaint.jsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -35,6 +42,16 @@ const router = createBrowserRouter(
           <Route path="pending-request" element={<PendingProfilesPage />} />
 
           {/* put remaining routes here... */}
+          <Route path="college-dashboard" element={<AdminCollegePanel/>} />
+          <Route path="student-dashboard" element={<StudentDashboard/>} />
+          <Route path="admin-dashboard" element={<StudentDashboard/>} />
+          <Route path="faculty-dashboard" element={<FacultyDashboard/>} />
+
+          <Route path="wallofshame" element={<StudentShame/>} />
+          <Route path="admin-wallofshame" element={<WallOfShameAdmin/>} />
+
+          <Route path="complaints" element={<StudentComplaint/>} />
+          <Route path="admin-complaints" element={<AdminComplain/>} />
 
         </Route>
       </Route>
