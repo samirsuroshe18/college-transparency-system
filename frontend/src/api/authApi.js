@@ -1,7 +1,5 @@
-import {login} from '../redux/slices/authSlice.js';
 import { showNotificationWithTimeout } from '../redux/slices/notificationSlice.js';
 import axiosInstance from './config.js'; 
-
 
 
 const googleLoginUser = async (token, setLoading, dispatch) => {
@@ -16,23 +14,10 @@ const googleLoginUser = async (token, setLoading, dispatch) => {
             },
             { withCredentials: true }
         );
-
-        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
-
-        // ✅ Fetch current user data after login
-        const userResponse = await axiosInstance.get(`/api/v1/user/current-user`, { withCredentials: true });
-
         setLoading(false);
-
-        // ✅ Store user data in Redux
-        dispatch(login(userResponse.data.data));
-
-        return {
-            userData: userResponse.data.data,
-            redirectTo: userResponse.data.data.redirectTo,
-        };
+        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        return response.data;
     } catch (error) {
-        setLoading(false);
         throw error;
     }
 };
@@ -88,8 +73,9 @@ const addStudentProfile = async (formData, setLoading, dispatch) => {
     setLoading(true);
     try {
         const form = new FormData();
+        console.log("payload Image",formData.proofImage);
 
-        form.append("proofImage", formData.proofImage);
+        form.append("proofImage", formData.image);
         form.append("fullName", formData.fullName);
         form.append("email", formData.email);
         form.append("studentId", formData.studentId);
@@ -108,7 +94,7 @@ const addStudentProfile = async (formData, setLoading, dispatch) => {
         );
         setLoading(false);
         dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
-        return response;
+        return response.data;
     } catch (error) {
         throw error
     }
@@ -139,12 +125,35 @@ const addFacultyProfile = async (formData, setLoading, dispatch) => {
         );
         setLoading(false);
         dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
-        return response;
+        return response.data;
     } catch (error) {
         throw error
     }
 };
 
-export { googleLoginUser, logoutUser, getCurrentUser, loginUser, addFacultyProfile, addStudentProfile }
+const getPendingStudents = async (setLoading, dispatch) => {
+    setLoading(true);
+    try {
+        const response = await axiosInstance.get(
+            `/api/v1/user/get-pending-students`,
+            {withCredentials: true}
+        );
+        setLoading(false);
+        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        return response.data;
+    } catch (error) {
+        throw error
+    }
+};
+
+export { 
+    googleLoginUser, 
+    logoutUser, 
+    getCurrentUser, 
+    loginUser, 
+    addFacultyProfile, 
+    addStudentProfile,
+    getPendingStudents
+}
 
 

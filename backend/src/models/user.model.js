@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import e from "express";
 
 const userSchema = new Schema({
     name: {
@@ -32,14 +33,13 @@ const userSchema = new Schema({
     
     // Fields specific to Students
     studentId: { type: String, unique: true, sparse: true },
-    course: { type: String },
     department: { type: String },
     currentYear: { type: Number },
     passingYear: { type: Number },
     currentSemester: { type: Number },
     classDivision: { type: String },
-    rollNumber: { type: String },
-    admissionType: { type: String },
+    rollNumber: { type: String, unique: true },
+    admissionType: { type: String, enum: ["regular", "lateral"]},
     admissionDate: { type: Date },
     hostelStatus: { type: String, enum: ["Hostel", "Day Scholar"] },
     bloodGroup: {type: String},
@@ -47,7 +47,8 @@ const userSchema = new Schema({
     // Fields specific to Faculty
     facultyId: { type: String, unique: true, sparse: true},
     department: { type: String },
-    designation: { type: String },
+    designation: { type: String, enum: ["Professor", "Associate Professor", "Assistant Professor", "Lecturer", "Lab assistant", "Registrar", "Director"] },
+    isBoardMember: { type: Boolean },
     joiningDate: { type: Date },
     qualification: { type: String },
     subjectsTaught: [{ type: String }],
@@ -56,7 +57,12 @@ const userSchema = new Schema({
 
     // Common Fields
     address: { type: String },
-    emergencyContact: { type: String },
+    emergencyContact: {
+        name: { type: String },
+        relation: { type: String },
+        contactNo: { type: String }
+    },
+
     idProof: { type: String },
 
     profileStatus: {
@@ -65,52 +71,16 @@ const userSchema = new Schema({
         default: "NotFilled",
     },
 
+    rejectionReason: { type: String },
+
     refreshToken: {
         type: String
     },
 
-    // Authentication Tokens
-    refreshToken: { type: String },
     verifyToken: String,
     verifyTokenExpiry: Date,
 
-    // Student Details
-    studentId: { type: String, unique: true },
-    rollno: { type: String, unique: true },
-    department: { type: String },
-    address: { type: String },
-    mobileNo: { type: String },
-    parentMobileNo: { type: String },
-    bloodGroup: { type: String },
-    dob: { type: Date },
-    admissionYear: { type: Number },
-    passingYear: { type: Number },
-    division: { type: String },
-    currentSemester: { type: Number },
-    hostelResident: { type: Boolean, default: false },
-    emergencyContact: {
-        name: { type: String },
-        relation: { type: String },
-        contactNo: { type: String }
-    },
-    studentStatus: { type: String, enum: ["Active", "Alumni"] },
-    admissionType: { type: String, enum: ["Regular", "Direct"] },
-    previousSchool: { type: String },
-    rejectionReason: { type: String },
-
 }, { timestamps: true });
-
-// Hash password before saving
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
-    this.password = await bcrypt.hash(this.password, 10);
-    next();
-});
-
-// Check password
-userSchema.methods.isPasswordCorrect = async function (password) {
-    return await bcrypt.compare(password, this.password);
-};
 
 // Generate JWT Tokens
 userSchema.methods.generateAccessToken = function () {
