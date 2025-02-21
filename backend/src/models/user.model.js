@@ -96,6 +96,7 @@ const userSchema = new Schema({
     studentStatus: { type: String, enum: ["Active", "Alumni"] },
     admissionType: { type: String, enum: ["Regular", "Direct"] },
     previousSchool: { type: String },
+    rejectionReason: { type: String },
 
 }, { timestamps: true });
 

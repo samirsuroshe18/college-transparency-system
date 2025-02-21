@@ -19,6 +19,8 @@ import WallOfShameAdmin from "../pages/cheating/WallOfShameAdmin.jsx";
 import StudentShame from "../pages/cheating/StudentShame.jsx";
 import StudentComplaint from "../pages/Complaints/StudentComplaint.jsx";
 import AdminComplain from "../pages/Complaints/AdminComplaint.jsx";
+import ProfilePendingPage from "../pages/commonPages/ProfilePendingPage.jsx";
+import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -59,6 +61,8 @@ const router = createBrowserRouter(
       <Route path="/select-role-screen" element={<SelectRoleScreen />} />
       <Route path="/student-profile" element={<StudentProfileFormScreen />} />
       <Route path="/faculty-profile" element={<FacultyProfileFormScreen />} />
+      <Route path="/profile-pending" element={<ProfilePendingPage />} />
+      <Route path="/profile-rejected" element={<ProfileRejectedPage />} />
       <Route path="*" element={<NotFound />} />
     </>
   )

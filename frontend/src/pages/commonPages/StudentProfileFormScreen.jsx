@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
+import { addStudentProfile } from '../../api/authApi';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { currentUser } from '../../redux/slices/authSlice';
+import { showNotificationWithTimeout } from '../../redux/slices/notificationSlice';
+import { handleAxiosError } from '../../utils/handleAxiosError';
 
 const SimpleStudentForm = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -34,9 +44,30 @@ const SimpleStudentForm = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    console.log("Form submitted:", formData);
+    try {
+      const res = await addStudentProfile(formData, setLoading, dispatch);
+      dispatch(currentUser(res.data));
+      if(res.data.data.profileStatus === "Pending") {
+        navigate("/profile-pending");
+      } else {
+        navigate("/");
+      }
+      navigate("/");
+    } catch (error) {
+      setLoading(false);
+      dispatch(
+        showNotificationWithTimeout({
+          show: true,
+          type: "error",
+          message: handleAxiosError(error),
+        })
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -142,7 +173,7 @@ const SimpleStudentForm = () => {
         </form>
       </div>
     </div>
-  );
+  ); 
 };
 
 export default SimpleStudentForm;
