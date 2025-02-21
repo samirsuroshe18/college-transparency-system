@@ -11,7 +11,7 @@ const AdminPanel = () => {
     const dispatch = useDispatch();
   
     useEffect(() => {
-      fetch("http://localhost:3000/bookings")
+      fetch(`${import.meta.env.VITE_DOMAIN}/bookings`)
         .then((res) => res.json())
         .then((data) => setBookings(data));
     }, []);

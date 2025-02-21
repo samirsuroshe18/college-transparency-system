@@ -16,7 +16,7 @@ const ApplicationManagement = () => {
     // Fetch applications from the backend
     const fetchApplications = async () => {
         try {
-            const response = await axios.get("http://localhost:3000/api/v1/application", {
+            const response = await axios.get(`${import.meta.env.VITE_DOMAIN}/api/v1/application`, {
                 withCredentials: true, // Ensure cookies are sent if needed
             });
             setApplications(response.data);
@@ -34,7 +34,7 @@ const ApplicationManagement = () => {
         e.preventDefault();
         setMessage("Submitting...");
         try {
-            const response = await axios.post("http://localhost:8000/api/v1/application/create",
+            const response = await axios.post(`${import.meta.env.VITE_DOMAIN}/api/v1/application/create`,
                 newApplication,
                 {
                     withCredentials: true, // Ensures cookies and sessions are sent

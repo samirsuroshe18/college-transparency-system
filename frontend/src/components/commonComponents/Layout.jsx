@@ -7,7 +7,7 @@ import { useDispatch } from "react-redux";
 import { handleAxiosError } from "../../utils/handleAxiosError";
 import { getCurrentUser } from "../../api/authApi";
 import { showNotificationWithTimeout } from "../../redux/slices/notificationSlice";
-import { login } from "../../redux/slices/authSlice";
+import { currentUser, login } from "../../redux/slices/authSlice";
 import SnackBar from "../../utils/SnackBar";
 
 export default function Layout() {
@@ -20,14 +20,17 @@ export default function Layout() {
     const fetchData = async () => {
       try {
         const res = await getCurrentUser(setLoading, dispatch);
-        dispatch(login(res.data));
+        dispatch(currentUser(res.data));
         
         // Check if profile is not filled, then navigate to select role screen
-        if (res.data.profileStatus === "NotFilled") {
-          console.log('Navigating to select role screen');
-          
-          // Use absolute path to avoid URL issues (leading /)
+        if (res.data.role === "admin") {
+          navigate('/');
+        }else if (res.data.profileStatus === "NotFilled") {
           navigate('/select-role-screen');
+        }else if (res.data.profileStatus === "Pending") {
+          navigate('/profile-pending');
+        }else if (res.data.profileStatus === "Rejected") {
+          navigate('/profile-rejected');
         }
       } catch (error) {
         setLoading(false);

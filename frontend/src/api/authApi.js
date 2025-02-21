@@ -82,7 +82,7 @@ const loginUser = async (formData, setLoading, dispatch) => {
     } catch (error) {
         throw error
     }
-};
+}; 
 
 const addStudentProfile = async (formData, setLoading, dispatch) => {
     setLoading(true);
