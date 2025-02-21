@@ -22,6 +22,8 @@ import AdminComplain from "../pages/Complaints/AdminComplaint.jsx";
 import ProfilePendingPage from "../pages/commonPages/ProfilePendingPage.jsx";
 import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
 
+import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
+import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -64,6 +66,8 @@ const router = createBrowserRouter(
       <Route path="/profile-pending" element={<ProfilePendingPage />} />
       <Route path="/profile-rejected" element={<ProfileRejectedPage />} />
       <Route path="*" element={<NotFound />} />
+      <Route path="/application-page" element={<ApplicationManagement />} />
+      <Route path="/admin-application" element={<AdminApplication/>}/>
     </>
   )
 );

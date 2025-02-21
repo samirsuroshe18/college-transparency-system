@@ -40,6 +40,8 @@ import candidateRouter from "./routes/electionModule/candidate.routes.js";
 import candidateApplicationRouter from "./routes/electionModule/candidateApplication.routes.js";
 import voteRoutes from "./routes/electionModule/vote.routes.js";
 
+import applicationRoutes from "./routes/applicationModule/application.routes.js";
+
 //routes declaration
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/complaints", complaintRouter);
@@ -50,6 +52,7 @@ app.use("/api/v1/admin/elections", adminElectionRouter);
 app.use("/api/v1/candidates", candidateRouter);
 app.use("/api/v1/applications", candidateApplicationRouter);
 app.use("/api/v1", voteRoutes);
+app.use("/api/v1/application", applicationRoutes);
 
 app.use(errorHandler);
 
