@@ -16,7 +16,7 @@ const AdminCollegePanel = () => {
   // ✅ Fetch College Data
   const fetchCollegeDetails = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/v1/college");
+      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/college`);
       const data = await response.json();
       setCollegeDomain(data.domain);
       setAdminEmails(data.adminEmails);
@@ -59,7 +59,7 @@ const AdminCollegePanel = () => {
   // ✅ Save College Data
   const saveCollegeDetails = async () => {
     try {
-      await fetch("http://localhost:3000/api/v1/admin/college/save", {
+      await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/college/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domain: collegeDomain, adminEmails, branches, divisions }),

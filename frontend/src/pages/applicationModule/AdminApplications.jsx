@@ -14,7 +14,7 @@ const AdminApplications = () => {
 
     const fetchApplications = async () => {
         try {
-            const response = await fetch("http://localhost:3000/api/v1/application");
+            const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/application`);
             const data = await response.json();
             setApplications(data);
             setLoading(false);
@@ -27,7 +27,7 @@ const AdminApplications = () => {
     const openModal = async (app) => {
         try {
             // Send request to update review status when the modal is opened
-            const response = await fetch(`http://localhost:3000/api/v1/application/${app._id}/review`, {
+            const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/application/${app._id}/review`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ reviewed: true, comment: "Viewed by Admin" }),
@@ -62,7 +62,7 @@ const AdminApplications = () => {
         try {
             const adminId = "ADMIN_USER_ID"; // Replace with actual admin ID
 
-            const response = await fetch(`http://localhost:3000/api/v1/application/${appId}/status`, {
+            const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/application/${appId}/status`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status, adminId, comment }),

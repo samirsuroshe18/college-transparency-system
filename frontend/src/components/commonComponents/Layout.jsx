@@ -23,9 +23,14 @@ export default function Layout() {
         dispatch(currentUser(res.data));
         
         // Check if profile is not filled, then navigate to select role screen
-        if (res.data.profileStatus === "NotFilled") {
-          console.log('Navigating to select role screen');
+        if (res.data.role === "admin") {
+          navigate('/');
+        }else if (res.data.profileStatus === "NotFilled") {
           navigate('/select-role-screen');
+        }else if (res.data.profileStatus === "Pending") {
+          navigate('/profile-pending');
+        }else if (res.data.profileStatus === "Rejected") {
+          navigate('/profile-rejected');
         }
       } catch (error) {
         setLoading(false);

@@ -19,7 +19,7 @@ const AdminElectionPanel = () => {
   // ✅ Fetch Elections
   const fetchElections = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/v1/admin/elections/");
+      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/`);
       const data = await response.json();
       setElections(data);
     } catch (error) {
@@ -31,7 +31,7 @@ const AdminElectionPanel = () => {
     if (!title || !applicationDeadline || !resultDate) return;
   
     try {
-      await fetch("http://localhost:3000/api/v1/admin/elections/create", {
+      await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -60,7 +60,7 @@ const AdminElectionPanel = () => {
   // ✅ Handle Approve/Reject Candidate
   const handleApproval = async (candidateId, action) => {
     try {
-      await fetch(`http://localhost:3000/api/v1/applications/${candidateId}`, {
+      await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/applications/${candidateId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: action }),

@@ -8,14 +8,14 @@ const BookingPage = () => {
     const [selectedFacility, setSelectedFacility] = useState(null);
   
     useEffect(() => {
-      fetch("http://localhost:3000/facilities")
+      fetch(`${import.meta.env.VITE_DOMAIN}/facilities`)
         .then((res) => res.json())
         .then((data) => setFacilities(data));
     }, []);
   
     const handleBooking = async (e) => {
       e.preventDefault();
-      const response = await fetch("http://localhost:3000/bookings", {
+      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ facility: "67b0fa2df1d350aae3ecfed3", date, timeSlot }),
