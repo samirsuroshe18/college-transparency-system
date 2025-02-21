@@ -15,6 +15,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LayersIcon from '@mui/icons-material/Layers';
 import DescriptionIcon from '@mui/icons-material/Description';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
 
 const NAVIGATION = [
@@ -27,11 +28,11 @@ const NAVIGATION = [
     title: 'Election',
     icon: <DashboardIcon />,
   },
-  // {
-  //   segment: 'login',
-  //   title: 'Orders',
-  //   icon: <ShoppingCartIcon />,
-  // },
+  {
+    segment: 'pending-request',
+    title: 'Pending Requests',
+    icon: <ShoppingCartIcon />,
+  },
   // {
   //   kind: 'divider',
   // },
@@ -94,6 +95,11 @@ function App() {
       segment: 'notices',
       title: 'Announce',
       icon: <AnnouncementIcon />,
+    },
+    {
+      segment: 'pending-request',
+      title: 'Pending Requests',
+      icon: <ShoppingCartIcon />,
     },
     {
       segment: 'college-dashboard',
@@ -167,7 +173,7 @@ function App() {
   ];
 
   return (
-    <ReactRouterAppProvider navigation={NAVIGATION} branding={BRANDING} theme={demoTheme}>
+    <ReactRouterAppProvider navigation={NAVIGATION} branding={BRANDING}>
       <Outlet /> {/* This will render nested routes */}
     </ReactRouterAppProvider>
   );
