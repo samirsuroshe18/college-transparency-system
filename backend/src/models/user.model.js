@@ -18,51 +18,51 @@ const userSchema = new Schema({
     profilePic: {
         type: String,
     },
-    
-    phoneNumber: { type: String,  },
-    dateOfBirth: { type: Date,  },
-    gender: { type: String, enum: ["Male", "Female", "Other"],  },
 
     role: {
         type: String,
         enum: ["student", "faculty", "admin"],
         default: "student"
     },
+    
+    phoneNumber: { type: String,  },
+    dateOfBirth: { type: Date,  },
+    gender: { type: String, enum: ["Male", "Female", "Other"],  },
 
+    
     // Fields specific to Students
     studentId: { type: String, unique: true, sparse: true },
     course: { type: String },
     department: { type: String },
-    year: { type: Number },
-    semester: { type: Number },
+    currentYear: { type: Number },
+    passingYear: { type: Number },
+    currentSemester: { type: Number },
     classDivision: { type: String },
     rollNumber: { type: String },
+    admissionType: { type: String },
+    admissionDate: { type: Date },
     hostelStatus: { type: String, enum: ["Hostel", "Day Scholar"] },
+    bloodGroup: {type: String},
 
     // Fields specific to Faculty
-    employeeId: { type: String, unique: true, sparse: true},
+    facultyId: { type: String, unique: true, sparse: true},
     department: { type: String },
     designation: { type: String },
     joiningDate: { type: Date },
     qualification: { type: String },
     subjectsTaught: [{ type: String }],
     officeRoomNumber: { type: String },
+    officePhoneNumber: { type: String },
 
     // Common Fields
     address: { type: String },
     emergencyContact: { type: String },
-    profilePicture: { type: String }, // URL of profile picture
-    idProof: { type: String }, // URL of ID proof document
+    idProof: { type: String },
 
     profileStatus: {
         type: String,
         enum: ["Pending", "Rejected", "Approved", "NotFilled"],
         default: "NotFilled",
-    },
-
-    isGoogleVerified: {
-        type: Boolean,
-        default: false,
     },
 
     refreshToken: {
@@ -71,8 +71,6 @@ const userSchema = new Schema({
 
     verifyToken: String,
     verifyTokenExpiry: Date,
-    forgotPasswordToken: String,
-    forgotPasswordTokenExpiry: Date,
 
 }, { timestamps: true });
 
