@@ -21,8 +21,7 @@ const VotingPage = () => {
             const res = await axios.get(`http://localhost:8000/api/v1/admin/elections/live`, { withCredentials: true });
             const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/upcoming`);
             console.log(response);
-            setCandidates(res?.data?._id)
-            ;
+            console.log(res);
         } catch (error) {
             console.error("Error fetching candidates:", error);
         } finally {

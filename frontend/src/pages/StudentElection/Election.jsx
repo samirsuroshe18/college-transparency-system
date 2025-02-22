@@ -14,7 +14,7 @@ const StudentElectionPanel = () => {
   const [applicationData, setApplicationData] = useState({ agenda: "", experience: "" });
   const [selectedElectionId, setSelectedElectionId] = useState(null);
 
-  console.log("User Data:", userData);
+  
   useEffect(() => {
     fetchElections();
     fetchUserApplications();
@@ -27,7 +27,7 @@ const StudentElectionPanel = () => {
       const today = new Date();
       const upcoming = [];
       const live = [];
-
+      console.log(data);  
       data.forEach((election) => {
         const deadline = new Date(election.applicationDeadline);
         if (deadline < today) {
@@ -36,14 +36,15 @@ const StudentElectionPanel = () => {
           upcoming.push(election);
         }
       });
-
+      console.log(upcoming);
       setElections(upcoming);
       setLiveElections(live);
     } catch (error) {
       console.error("Error fetching elections:", error);
     }
+    
   };
-
+  
   const fetchUserApplications = async () => {
     if (!userData?.user?._id) return;
 
@@ -65,6 +66,7 @@ const StudentElectionPanel = () => {
   };
 
   const handleApplyClick = (electionId) => {
+    console.log("Selected Election ID:", electionId);
     setSelectedElectionId(electionId);
     setIsApplying(true);
   };
@@ -74,25 +76,48 @@ const StudentElectionPanel = () => {
   };
 
   const handleSubmitApplication = async () => {
+    if (!selectedElectionId) {
+      console.error("Election ID is missing");
+      return;
+    }
+  
+    if (!userData?._id) {
+      console.error("User ID is missing");
+      return;
+    }
+  
+    console.log("Submitting Application for Election ID:", selectedElectionId);
+    console.log("User ID:", userData?._id); // Debugging
+  
     try {
-      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/applications/apply`, {
+      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/applications/${selectedElectionId}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          electionId: selectedElectionId,
-          userId: userData.user._id,
-          agenda: applicationData.agenda,
-          experience: applicationData.experience,
+          userId: userData?._id,        // Ensure the user ID is dynamic
+          name: userData?.name || "John Doe",  // Ensure the name is fetched dynamically
+          class: "10A",                  // Set the class dynamically if needed
+          agenda: applicationData.agenda, // The user's agenda input
+          experience: applicationData.experience, // The user's experience input
         }),
+        
       });
-      if (response.ok) {
-        setIsApplying(false);
-        fetchUserApplications();
+  
+      const result = await response.json();
+      console.log("API Response:", result); // Debugging
+  
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to submit application");
       }
+  
+      console.log("Application submitted successfully");
+      setIsApplying(false);
+      fetchUserApplications();
     } catch (error) {
-      console.error("Error submitting application:", error);
+      console.error("Error submitting application:", error.message);
     }
   };
+  
 
   return (
     <div className="min-h-screen p-6 bg-gray-100 text-gray-900">
@@ -140,7 +165,7 @@ const StudentElectionPanel = () => {
           <DialogHeader>Apply for Election</DialogHeader>
           <div className="space-y-4">
             <label className="block text-sm font-medium">Name</label>
-            <Input type="text" value={userData?.user?.name || ""} disabled className="bg-gray-200" />
+            <Input type="text" value={userData?.name || ""} disabled className="bg-gray-200" />
 
             <label className="block text-sm font-medium">Agenda</label>
             <Input type="text" name="agenda" value={applicationData.agenda} onChange={handleInputChange} />

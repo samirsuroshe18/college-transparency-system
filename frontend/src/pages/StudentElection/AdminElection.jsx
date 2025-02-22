@@ -18,6 +18,8 @@ const AdminElectionPanel = () => {
     year: "",
     division: "",
   });
+  const [selectedElectionId, setSelectedElectionId] = useState(null);
+  const [candidates, setCandidates] = useState([]);
 
   useEffect(() => {
     fetchElections();
@@ -26,12 +28,24 @@ const AdminElectionPanel = () => {
   const fetchElections = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/`
+        `${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/upcoming`
       );
       const data = await response.json();
       setElections(data);
     } catch (error) {
       console.error("Error fetching elections:", error);
+    }
+  };
+
+  const fetchCandidates = async (electionId) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/${electionId}/candidates`
+      );
+      const data = await response.json();
+      setCandidates(data);
+    } catch (error) {
+      console.error("Error fetching candidates:", error);
     }
   };
 
@@ -60,6 +74,12 @@ const AdminElectionPanel = () => {
     } catch (error) {
       console.error("Error creating election:", error);
     }
+  };
+
+  // Handle Election Selection
+  const handleElectionSelect = (electionId) => {
+    setSelectedElectionId(electionId);
+    fetchCandidates(electionId); // Fetch candidates when an election is selected
   };
 
   return (
@@ -143,8 +163,47 @@ const AdminElectionPanel = () => {
           Create Election
         </button>
       </section>
-    </div>
 
+      {/* Election Listing Section */}
+      <section className="mt-8">
+        <h2 className="text-xl font-semibold text-blue-500">Available Elections</h2>
+        <div className="mt-4">
+          <Select onValueChange={handleElectionSelect}>
+            <SelectTrigger className="w-full px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+              <SelectValue placeholder="Select Election" />
+            </SelectTrigger>
+            <SelectContent className="bg-white text-gray-900 border border-gray-300">
+              {elections.map((election) => (
+                <SelectItem key={election.id} value={election.id}>
+                  {election.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </section>
+
+      {/* Candidate Listings Section */}
+      {selectedElectionId && (
+        <section className="mt-8">
+          <h2 className="text-xl font-semibold text-blue-500">Candidates Applied</h2>
+          <div className="mt-4">
+            {candidates.length === 0 ? (
+              <p>No candidates found for this election.</p>
+            ) : (
+              <ul className="space-y-2">
+                {candidates.map((candidate) => (
+                  <li key={candidate.id} className="p-4 bg-gray-100 rounded-md shadow-md">
+                    <h3 className="font-semibold">{candidate.name}</h3>
+                    <p>{candidate.branch} - {candidate.year} - {candidate.division}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      )}
+    </div>
   );
 };
 
