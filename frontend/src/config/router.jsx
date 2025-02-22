@@ -25,6 +25,7 @@ import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
 import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
 import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
+import BookingPage from "../pages/FacilityBooking/BookingPage.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -34,7 +35,7 @@ const router = createBrowserRouter(
 
           {/* Facility Booking Module Routes */}
           <Route path="dashboard" element={<FacilityDashboard />}>
-            <Route path="facility" element={<FacilityDashboard />} />
+            <Route path="booking" element={<BookingPage />} />
             <Route path="admin" element={<AdminPanel />} />
           </Route>
 

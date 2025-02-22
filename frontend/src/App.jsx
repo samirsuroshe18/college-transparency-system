@@ -83,7 +83,8 @@ const demoTheme = extendTheme({
 });
 
 function App() {
-  const userRole = useSelector((state) => state.auth.user?.role); // Fetch user role from Redux
+  const userRole = useSelector(state => state.auth.userData); // Fetch user role from Redux
+  // console.log(userRole);
 
   // Define sidebar navigation conditionally
   const NAVIGATION = [
@@ -117,9 +118,21 @@ function App() {
       icon: <BusinessCenterIcon />,
     },
     {
-      segment: 'faculty-dashboard',
-      title: 'Faculty Dashboard',
-      icon: <BusinessCenterIcon />,
+      segment: 'dashboard',
+      title: 'Facility Booking',
+      icon: <BarChartIcon />,
+      children: [
+        {
+          segment: 'booking',
+          title: 'Booking',
+          icon: <DescriptionIcon />,
+        },
+        {
+          segment: 'admin',
+          title: 'Admin Pannel',
+          icon: <DescriptionIcon />,
+        },
+      ],
     },
     {
       segment: 'election',
@@ -127,7 +140,7 @@ function App() {
       icon: <HowToVoteIcon />,
     },
     {
-      segment: 'facility-booking',
+      segment: 'dashboard',
       title: 'Facilities Booking',
       icon: <BusinessCenterIcon />,
     },
