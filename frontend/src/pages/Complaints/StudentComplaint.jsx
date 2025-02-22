@@ -27,7 +27,7 @@ export default function StudentComplaint() {
     }
 
     try {
-      const res = await axios.post("http://localhost:3000/api/v1/complaints/submit-complaint", formData);
+      const res = await axios.post("http://localhost:8000/api/v1/complaints/submit-complaint", formData);
       alert("Complaint Submitted")
       console.log(alert)
     } catch (error) {
@@ -39,7 +39,7 @@ export default function StudentComplaint() {
   const handleVoteToReveal = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`http://localhost:3000/api/v1/complaints/vote-to-reveal/${complaintId}`);
+      const res = await axios.post(`http://localhost:8000/api/v1/complaints/vote-to-reveal/${complaintId}`);
       alert("Vote Recorded")
       console.log(res)
     } catch (error) {

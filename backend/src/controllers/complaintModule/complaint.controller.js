@@ -2,10 +2,17 @@ import Complaint from "../../models/ComplaintModule/complaint.model.js";
 import { uploadOnCloudinary } from "../../utils/cloudinary.js";
 import axios from "axios";
 import fs from "fs";
-import vision from "@google-cloud/vision";
+import AWS from "aws-sdk";
 
 // Hugging Face API Key
 const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
+
+// AWS Rekognition Setup
+const rekognition = new AWS.Rekognition({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION,
+});
 
 // ✅ Moderate Text Content
 async function moderateText(text) {
@@ -29,37 +36,30 @@ async function moderateText(text) {
     }
 }
 
-// ✅ Scan Image for NSFW using Google Cloud Vision
-async function scanImage(imagePath) {
+// ✅ Scan Image for NSFW using AWS Rekognition
+async function scanImageWithRekognition(imagePath) {
     try {
-        if (!fs.existsSync(imagePath)) {
-            console.error("🚫 Image file does not exist:", imagePath);
-            return "Safe";
-        }
+        const imageBuffer = fs.readFileSync(imagePath);
+        const params = {
+            Image: {
+                Bytes: imageBuffer,
+            },
+            MinConfidence: 80,
+        };
 
-        const client = new vision.ImageAnnotatorClient(); // Uses GOOGLE_APPLICATION_CREDENTIALS env
+        const response = await rekognition.detectModerationLabels(params).promise();
+        console.log("✅ AWS Rekognition Result:", response.ModerationLabels);
 
-        console.log("🔍 Starting NSFW scan for:", imagePath);
+        const nsfwLabels = response.ModerationLabels.filter(label => label.Confidence >= 80);
 
-        const [result] = await client.safeSearchDetection(imagePath);
-        const detections = result.safeSearchAnnotation;
-
-        if (!detections) {
-            console.error("🚫 No SafeSearch annotation found.", result);
-            return "Safe";
-        }
-
-        console.log("✅ Google Vision SafeSearch Result:", detections);
-
-        const { adult, violence, racy } = detections;
-        if (["VERY_LIKELY", "LIKELY"].includes(adult) || ["VERY_LIKELY", "LIKELY"].includes(racy)) {
-            console.warn("🚫 NSFW content detected:", { adult, racy });
+        if (nsfwLabels.length > 0) {
+            console.warn("🚫 NSFW content detected:", nsfwLabels);
             return "NSFW";
         }
 
         return "Safe";
     } catch (error) {
-        console.error("Image NSFW error:", error.message);
+        console.error("AWS Rekognition error:", error.message);
         return "Safe";
     }
 }
@@ -69,6 +69,7 @@ export async function submitComplaint(req, res) {
     try {
         const { title, description } = req.body;
         const mediaFiles = req.files || []; // Multer will populate this
+        const uploadedMedia = [];
 
         if (!title || !description) {
             return res.status(400).json({ message: "Title and description are required" });
@@ -80,15 +81,13 @@ export async function submitComplaint(req, res) {
             return res.status(400).json({ message: "Inappropriate content detected in description." });
         }
 
-        const uploadedMedia = [];
-
         // ✅ Process Media Files
         for (const file of mediaFiles) {
             const fileType = file.mimetype;
             console.log(`🔄 Processing file: ${file.originalname}, Type: ${fileType}`);
 
             if (fileType.startsWith("image/")) {
-                const imageStatus = await scanImage(file.path);
+                const imageStatus = await scanImageWithRekognition(file.path);
                 if (imageStatus === "NSFW") {
                     fs.unlinkSync(file.path); // Delete local file
                     return res.status(400).json({ message: "NSFW content detected in image." });
@@ -123,13 +122,13 @@ export async function submitComplaint(req, res) {
             media: uploadedMedia,
             votes: [],
             isRevealed: false,
-            revealThreshold: 5
+            revealThreshold: 5,
         });
 
         await newComplaint.save();
         res.status(201).json({
             message: "Complaint submitted successfully. Complaints undergo real-time moderation; vulgar content is blocked (no inappropriate images/videos).",
-            complaint: newComplaint
+            complaint: newComplaint,
         });
     } catch (error) {
         console.error("Error submitting complaint:", error);
