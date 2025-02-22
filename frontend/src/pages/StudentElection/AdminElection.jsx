@@ -16,7 +16,6 @@ const AdminElectionPanel = () => {
     fetchElections();
   }, []);
 
-  // ✅ Fetch Elections
   const fetchElections = async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/`);
@@ -36,12 +35,12 @@ const AdminElectionPanel = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
-          electionDate: resultDate, // ✅ Ensure this field is sent
+          electionDate: resultDate,
           applicationDeadline,
           votingCriteria,
         }),
       });
-      fetchElections(); // Refresh data after creation
+      fetchElections();
       setTitle("");
       setApplicationDeadline("");
       setResultDate("");
@@ -50,69 +49,47 @@ const AdminElectionPanel = () => {
       console.error("Error creating election:", error);
     }
   };
-  
 
-  // ✅ Toggle Election Details
   const toggleElection = (id) => {
     setSelectedElection(selectedElection === id ? null : id);
   };
 
-  // ✅ Handle Approve/Reject Candidate
-  const handleApproval = async (candidateId, action) => {
-    try {
-      await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/applications/${candidateId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: action }),
-      });
-      fetchElections(); // Refresh data
-      setShowConfirmModal(false);
-    } catch (error) {
-      console.error("Error updating candidate status:", error);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#131314] text-white p-6 space-y-8">
-      {/* Header */}
-      <header className="flex justify-between items-center py-4 px-6 bg-black/20 rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold text-amber-500">Admin Election Panel</h1>
+    <div className="min-h-screen bg-gray-900 text-white p-8 space-y-8">
+      <header className="flex justify-between items-center py-4 px-8 bg-gray-800 rounded-lg shadow-md">
+        <h1 className="text-3xl font-bold text-amber-400">Admin Election Panel</h1>
       </header>
 
-      {/* Create Election */}
-      <section className="bg-black/20 p-6 rounded-xl shadow-md">
-        <h2 className="text-lg font-semibold text-amber-400">Create New Election</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+      <section className="bg-gray-800 p-8 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold text-amber-300">Create New Election</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
           <input
             type="text"
             placeholder="Election Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="bg-black/50 text-white px-4 py-2 rounded-lg outline-none"
+            className="bg-gray-700 text-white px-4 py-3 rounded-md outline-none focus:ring focus:ring-amber-400"
           />
           <input
             type="date"
             value={applicationDeadline}
             onChange={(e) => setApplicationDeadline(e.target.value)}
-            className="bg-black/50 text-white px-4 py-2 rounded-lg outline-none"
-            placeholder="Application Deadline"
+            className="bg-gray-700 text-white px-4 py-3 rounded-md outline-none focus:ring focus:ring-amber-400"
           />
           <input
             type="date"
             value={resultDate}
             onChange={(e) => setResultDate(e.target.value)}
-            className="bg-black/50 text-white px-4 py-2 rounded-lg outline-none"
-            placeholder="Result Announcement Date"
+            className="bg-gray-700 text-white px-4 py-3 rounded-md outline-none focus:ring focus:ring-amber-400"
           />
         </div>
 
-        {/* Voting Criteria Dropdowns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
           <Select onValueChange={(val) => setVotingCriteria({ ...votingCriteria, branch: val })}>
-            <SelectTrigger className="w-full bg-black/50 text-white px-4 py-2 rounded-lg outline-none">
+            <SelectTrigger className="w-full bg-gray-700 text-white px-4 py-3 rounded-md focus:ring focus:ring-amber-400">
               <SelectValue placeholder="Select Branch" />
             </SelectTrigger>
-            <SelectContent className="bg-black text-white">
+            <SelectContent className="bg-gray-800 text-white">
               <SelectItem value="Computer">Computer</SelectItem>
               <SelectItem value="IT">IT</SelectItem>
               <SelectItem value="Mechanical">Mechanical</SelectItem>
@@ -121,10 +98,10 @@ const AdminElectionPanel = () => {
           </Select>
 
           <Select onValueChange={(val) => setVotingCriteria({ ...votingCriteria, year: val })}>
-            <SelectTrigger className="w-full bg-black/50 text-white px-4 py-2 rounded-lg outline-none">
+            <SelectTrigger className="w-full bg-gray-700 text-white px-4 py-3 rounded-md focus:ring focus:ring-amber-400">
               <SelectValue placeholder="Select Year" />
             </SelectTrigger>
-            <SelectContent className="bg-black text-white">
+            <SelectContent className="bg-gray-800 text-white">
               <SelectItem value="FE">First Year (FE)</SelectItem>
               <SelectItem value="SE">Second Year (SE)</SelectItem>
               <SelectItem value="TE">Third Year (TE)</SelectItem>
@@ -133,10 +110,10 @@ const AdminElectionPanel = () => {
           </Select>
 
           <Select onValueChange={(val) => setVotingCriteria({ ...votingCriteria, division: val })}>
-            <SelectTrigger className="w-full bg-black/50 text-white px-4 py-2 rounded-lg outline-none">
+            <SelectTrigger className="w-full bg-gray-700 text-white px-4 py-3 rounded-md focus:ring focus:ring-amber-400">
               <SelectValue placeholder="Select Division" />
             </SelectTrigger>
-            <SelectContent className="bg-black text-white">
+            <SelectContent className="bg-gray-800 text-white">
               <SelectItem value="A">A</SelectItem>
               <SelectItem value="B">B</SelectItem>
               <SelectItem value="C">C</SelectItem>
@@ -145,10 +122,9 @@ const AdminElectionPanel = () => {
           </Select>
         </div>
 
-        {/* Create Button */}
         <button
           onClick={createElection}
-          className="bg-amber-500 px-6 py-2 mt-4 rounded-lg font-semibold hover:bg-amber-400 transition"
+          className="bg-amber-500 px-6 py-3 mt-6 rounded-md font-semibold hover:bg-amber-400 transition"
         >
           Create Election
         </button>
