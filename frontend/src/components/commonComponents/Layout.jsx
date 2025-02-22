@@ -41,7 +41,7 @@ export default function Layout() {
             message: handleAxiosError(error),
           })
         );
-        navigate("/login");
+        navigate("/");
       } finally {
         setLoading(false);
       }
