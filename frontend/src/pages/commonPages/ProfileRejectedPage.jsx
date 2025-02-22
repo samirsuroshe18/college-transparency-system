@@ -23,7 +23,7 @@ const ProfileRejectedPage = () => {
       title: "Resubmit",
       description: "Submit your profile again after making the necessary changes.",
       action: "Resubmit",
-      link: "/submit-profile"
+      link: user?.role == "student" ? "/student-profile" : "/student-profile"
     },
     {
       icon: Mail,

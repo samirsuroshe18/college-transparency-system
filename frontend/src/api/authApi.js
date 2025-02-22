@@ -1,5 +1,5 @@
 import { showNotificationWithTimeout } from '../redux/slices/notificationSlice.js';
-import axiosInstance from './config.js'; 
+import axiosInstance from './config.js';
 
 
 const googleLoginUser = async (token, setLoading, dispatch) => {
@@ -15,7 +15,7 @@ const googleLoginUser = async (token, setLoading, dispatch) => {
             { withCredentials: true }
         );
         setLoading(false);
-        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
         return response.data;
     } catch (error) {
         throw error;
@@ -27,11 +27,11 @@ const logoutUser = async (setLoading, dispatch) => {
     setLoading(true);
     try {
         const response = await axiosInstance.get(
-            `/api/v1/tenant/logout`, 
+            `/api/v1/tenant/logout`,
             { withCredentials: true }
         );
         setLoading(false);
-        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
         return response.data;
     } catch (error) {
         throw error;
@@ -43,10 +43,10 @@ const getCurrentUser = async (setLoading, dispatch) => {
     try {
         const response = await axiosInstance.get(
             `/api/v1/user/current-user`,
-            {withCredentials: true}
+            { withCredentials: true }
         );
         setLoading(false);
-        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
         return response.data;
     } catch (error) {
         throw error
@@ -62,28 +62,42 @@ const loginUser = async (formData, setLoading, dispatch) => {
             { withCredentials: true }
         );
         setLoading(false);
-        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
         return response.data;
     } catch (error) {
         throw error
     }
-}; 
+};
 
 const addStudentProfile = async (formData, setLoading, dispatch) => {
     setLoading(true);
     try {
         const form = new FormData();
-        console.log("payload Image",formData.proofImage);
+        console.log("payload Image", formData.idProof);
 
-        form.append("proofImage", formData.image);
-        form.append("fullName", formData.fullName);
+        form.append("proofImage", formData.idProof);
+        form.append("name", formData.name);
         form.append("email", formData.email);
-        form.append("studentId", formData.studentId);
+        form.append("studentId", formData.studentId || ""); // Ensure it's not undefined
         form.append("department", formData.department);
-        form.append("year", formData.year);
+        form.append("classDivision", formData.division || "");
+        form.append("rollNumber", formData.rollNo);
+        form.append("admissionType", formData.admissionType);
+        form.append("admissionDate", formData.admissionDate);
+        form.append("currentYear", formData.currentYear);
+        form.append("passingYear", formData.passingYear || "");
+        form.append("hostelStatus", formData.hostelStatus);
+        form.append("address", formData.address);
+        form.append("bloodGroup", formData.bloodGroup || "");
+        form.append("emergencyContact", JSON.stringify(formData.emergencyContact) || "");
+
+        // Additional fields from original payload
+        form.append("dateOfBirth", formData.dob);
+        form.append("gender", formData.gender);
+        form.append("phoneNumber", formData.phone);
 
         const response = await axiosInstance.post(
-            `/api/v1/user/add-student-profile`, 
+            `/api/v1/user/add-student-profile`,
             form,
             {
                 headers: {
@@ -93,7 +107,7 @@ const addStudentProfile = async (formData, setLoading, dispatch) => {
             }
         );
         setLoading(false);
-        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
         return response.data;
     } catch (error) {
         throw error
@@ -102,19 +116,26 @@ const addStudentProfile = async (formData, setLoading, dispatch) => {
 
 const addFacultyProfile = async (formData, setLoading, dispatch) => {
     setLoading(true);
+    console.log("payload Data", formData)
+    console.log("Qualification", formData.qualification)
     try {
         const form = new FormData();
-        console.log("payload Data",formData)
-        console.log("payload Image",formData.image)
-        form.append("proofImage", formData.image);
-        form.append("fullName", formData.fullName);
-        form.append("email", formData.email);
-        form.append("employeeId", formData.employeeId);
-        form.append("department", formData.department);
+        console.log("payload Data", formData)
+        console.log("payload Image", formData.idProof);
+        form.append("proofImage", formData.idProof);
+        form.append("phoneNumber", formData.phoneNumber);
+        form.append("gender", formData.gender);
         form.append("designation", formData.designation);
+        form.append("dateOfBirth", formData.dateOfBirth);
+        form.append("department", formData.department);
+        form.append("isBoardMember", formData.isBoardMember);
+        form.append("joinDate", formData.joinDate);
+        form.append("address", formData.address);
+        form.append("qualification", formData.qualification);
+        form.append("emergencyContact", JSON.stringify(formData.emergencyContact));
 
         const response = await axiosInstance.post(
-            `/api/v1/user/add-faculty-profile`, 
+            `/api/v1/user/add-faculty-profile`,
             form,
             {
                 headers: {
@@ -124,7 +145,7 @@ const addFacultyProfile = async (formData, setLoading, dispatch) => {
             }
         );
         setLoading(false);
-        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
         return response.data;
     } catch (error) {
         throw error
@@ -136,24 +157,106 @@ const getPendingStudents = async (setLoading, dispatch) => {
     try {
         const response = await axiosInstance.get(
             `/api/v1/user/get-pending-students`,
-            {withCredentials: true}
+            { withCredentials: true }
         );
         setLoading(false);
-        dispatch(showNotificationWithTimeout({show:true, type:"success", message:response.data.message}));
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
         return response.data;
     } catch (error) {
         throw error
     }
 };
 
-export { 
-    googleLoginUser, 
-    logoutUser, 
-    getCurrentUser, 
-    loginUser, 
-    addFacultyProfile, 
+const getPendingFaculty = async (setLoading, dispatch) => {
+    setLoading(true);
+    try {
+        const response = await axiosInstance.get(
+            `/api/v1/user/get-pending-faculty`,
+            { withCredentials: true }
+        );
+        setLoading(false);
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
+        return response.data;
+    } catch (error) {
+        throw error
+    }
+};
+
+const approveStudent = async (data, setLoading, dispatch) => {
+    setLoading(true);
+    try {
+        const response = await axiosInstance.post(
+            `/api/v1/user/student-approve`,
+            data,
+            { withCredentials: true }
+        );
+        setLoading(false);
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
+        return response.data;
+    } catch (error) {
+        throw error
+    }
+};
+
+const rejectStudent = async (data, setLoading, dispatch) => {
+    setLoading(true);
+    try {
+        const response = await axiosInstance.post(
+            `/api/v1/user/student-reject`,
+            data,
+            { withCredentials: true }
+        );
+        setLoading(false);
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
+        return response.data;
+    } catch (error) {
+        throw error
+    }
+};
+
+const approveFaculty = async (data, setLoading, dispatch) => {
+    setLoading(true);
+    try {
+        const response = await axiosInstance.post(
+            `/api/v1/user/faculty-approve`,
+            data,
+            { withCredentials: true }
+        );
+        setLoading(false);
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
+        return response.data;
+    } catch (error) {
+        throw error
+    }
+};
+
+const rejectFaculty = async (data, setLoading, dispatch) => {
+    setLoading(true);
+    try {
+        const response = await axiosInstance.get(
+            `/api/v1/user/faculty-reject`,
+            data,
+            { withCredentials: true }
+        );
+        setLoading(false);
+        dispatch(showNotificationWithTimeout({ show: true, type: "success", message: response.data.message }));
+        return response.data;
+    } catch (error) {
+        throw error
+    }
+};
+
+export {
+    googleLoginUser,
+    logoutUser,
+    getCurrentUser,
+    loginUser,
+    addFacultyProfile,
     addStudentProfile,
-    getPendingStudents
+    getPendingStudents,
+    getPendingFaculty,
+    approveStudent,
+    rejectStudent,
 }
 
 

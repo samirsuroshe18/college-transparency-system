@@ -12,8 +12,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google-cloud/vision": "^4.3.2",
     "@huggingface/inference": "^3.3.6",
     "axios": "^1.7.9",
+    "bad-words": "^4.0.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.1",
     "cloudinary": "^2.5.1",
