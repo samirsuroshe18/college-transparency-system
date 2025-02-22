@@ -30,6 +30,7 @@ import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
 import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
 import BookingPage from "../pages/FacilityBooking/BookingPage.jsx";
+import DashboardLayout from "../pages/FacilityBooking/DashboardLayout.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -38,10 +39,9 @@ const router = createBrowserRouter(
           <Route path="/" element={<Home />} />
 
           {/* Facility Booking Module Routes */}
-          <Route path="dashboard" element={<FacilityDashboard />}>
-            <Route path="booking" element={<BookingPage />} />
-            <Route path="admin" element={<AdminPanel />} />
-          </Route>
+          <Route path="/dashboard" element={<FacilityDashboard />} />
+          <Route path="booking" element={<BookingPage />} />
+          <Route path="admin" element={<AdminPanel />} />
 
           {/* Student Election Module Routes */}
           <Route path="election" element={<StudentElectionPanel />} />
@@ -65,7 +65,6 @@ const router = createBrowserRouter(
           {/* pranay applications routes  */}
           <Route path="/application-page" element={<ApplicationManagement />} />
           <Route path="/admin-application" element={<AdminApplication />} />
-
         </Route>
       </Route>
       <Route path="/login" element={<LoginPage />} />
