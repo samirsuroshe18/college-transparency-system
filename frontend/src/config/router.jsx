@@ -25,8 +25,6 @@ import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
 import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
 import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
-import SimpleStudentForm from "../pages/commonPages/StudentProfileFormScreen.jsx";
-
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -73,9 +71,6 @@ const router = createBrowserRouter(
       <Route path="/application-page" element={<ApplicationManagement />} />
       <Route path="/admin-application" element={<AdminApplication/>}/>
       <Route path="*" element={<NotFound />} />
-
-
-      <Route path="/studentform" element={<SimpleStudentForm/>}/>
     </>
   )
 );
