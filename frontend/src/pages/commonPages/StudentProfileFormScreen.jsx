@@ -1,184 +1,405 @@
-import React, { useState } from 'react';
-import { addStudentProfile } from '../../api/authApi';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { currentUser } from '../../redux/slices/authSlice';
-import { showNotificationWithTimeout } from '../../redux/slices/notificationSlice';
-import { handleAxiosError } from '../../utils/handleAxiosError';
+import { useState } from "react";
+import { User, Mail, Phone, School, Calendar, Home, Heart, FileText, Upload, BookOpen, GraduationCap, UserPlus, AlertCircle } from "lucide-react";
+
+const FormSection = ({ title, children }) => (
+  <div className="bg-[#1a1a1d]/50 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-amber-500/10 space-y-4 mb-6 hover:border-amber-500/20 transition-all duration-300">
+    <h2 className="text-xl font-semibold text-amber-500 border-b border-amber-500/20 pb-2 flex items-center gap-2">
+      {title}
+    </h2>
+    {children}
+  </div>
+);
+
+const InputField = ({ icon: Icon, label, error, ...props }) => (
+  <div className="relative">
+    <label className="block text-sm font-medium text-amber-500/80 mb-1.5">{label}</label>
+    <div className="relative group">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <Icon className="h-5 w-5 text-amber-500/50 group-hover:text-amber-500 transition-colors duration-200" />
+      </div>
+      <input
+        {...props}
+        className={`w-full pl-10 pr-4 py-2.5 rounded-xl focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200 ${
+          props.readOnly 
+            ? "bg-[#1a1a1d] text-gray-400 cursor-not-allowed border border-gray-700"
+            : "bg-[#1a1a1d] text-white border border-amber-500/20 hover:border-amber-500/40 focus:border-amber-500"
+        }`}
+      />
+    </div>
+    {error && <p className="text-red-400 text-sm mt-1">{error}</p>}
+  </div>
+);
+
+const SelectField = ({ icon: Icon, label, children, error, ...props }) => (
+  <div className="relative">
+    <label className="block text-sm font-medium text-amber-500/80 mb-1.5">{label}</label>
+    <div className="relative group">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <Icon className="h-5 w-5 text-amber-500/50 group-hover:text-amber-500 transition-colors duration-200" />
+      </div>
+      <select
+        {...props}
+        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1a1d] text-white border border-amber-500/20 hover:border-amber-500/40 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200"
+      >
+        {children}
+      </select>
+    </div>
+    {error && <p className="text-red-400 text-sm mt-1">{error}</p>}
+  </div>
+);
 
 const SimpleStudentForm = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const user = useSelector((state) => state.auth.userData);
-
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    studentId: '',
-    department: '',
-    year: '',
-    image: null
+    name: "John Doe",
+    email: "john.doe@example.com",
+    profilePic: null,
+    dob: "",
+    gender: "",
+    phone: "",
+    rollNo: "",
+    department: "",
+    division: "",
+    admissionType: "regular",
+    admissionDate: "",
+    currentYear: "",
+    passingYear: "",
+    hostelStatus: "hostel",
+    address: "",
+    emergencyContact: { name: "", relation: "", contact: "" },
+    bloodGroup: "",
+    idProof: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
       setFormData(prev => ({
         ...prev,
-        image: file
+        [parent]: { ...prev[parent], [child]: value }
       }));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+    // Clear error when field is modified
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log("Form submitted:", formData);
-    try {
-      const res = await addStudentProfile(formData, setLoading, dispatch);
-      console.log("Student profile added:", res.data);
-      dispatch(currentUser(res.data));
-      if(res.data.profileStatus === "Pending") {
-        navigate("/profile-pending");
-      } else {
-        navigate("/");
+  const handleImageChange = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5000000) {
+        setErrors(prev => ({ ...prev, [field]: 'File size should be less than 5MB' }));
+        return;
       }
-      navigate("/");
-    } catch (error) {
-      console.log("Error adding student profile:", handleAxiosError(error));
-      setLoading(false);
-      dispatch(
-        showNotificationWithTimeout({
-          show: true,
-          type: "error",
-          message: handleAxiosError(error),
-        })
-      );
-    } finally {
-      setLoading(false);
+      setFormData(prev => ({ ...prev, [field]: file }));
+      if (field === 'profilePic') {
+        const reader = new FileReader();
+        reader.onloadend = () => setImagePreview(reader.result);
+        reader.readAsDataURL(file);
+      }
+      // Clear error when valid file is uploaded
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("Form Submitted:", formData);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-center mb-2">Student Profile</h2>
-        <p className="text-gray-500 text-center mb-6">Please fill in your academic information</p>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Full Name</label>
-              <input
-                type="text"
-                name="fullName"
-                value={user.name}
-                onChange={handleChange}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Enter your full name"
-              />
-            </div>
+    <div className="min-h-screen bg-[#131314] bg-gradient-to-br from-[#131314] to-[#1a1a1d] text-white p-4 md:p-6">
+      <div className="max-w-4xl mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-amber-500 to-amber-300 bg-clip-text text-transparent">
+              Student Profile Form
+            </h1>
+            <p className="text-amber-500/60 mt-3 text-lg">Complete your academic profile</p>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Email</label>
-              <input
-                type="email"
-                name="email"
-                onChange={handleChange}
-                value={user.email}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="your.email@example.com"
+          <FormSection title={<><User className="inline-block" /> Profile Picture</>}>
+          <div className="flex flex-col items-center gap-6">
+  {imagePreview ? (
+    <div className="relative group flex justify-center">
+      <img
+        src={imagePreview}
+        alt="Profile Preview"
+        className="w-32 h-32 rounded-2xl border-2 border-amber-500/50 object-cover transition-all duration-300 group-hover:border-amber-500"
+      />
+      
+    </div>
+  ) : null}
+</div>
+
+          </FormSection>
+
+          <FormSection title={<><UserPlus className="inline-block" /> Basic Information</>}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                icon={User}
+                label="Full Name"
+                type="text"
+                name="name"
+                value={formData.name}
                 readOnly
               />
+              <InputField
+                icon={Mail}
+                label="Email"
+                type="email"
+                name="email"
+                value={formData.email}
+                readOnly
+              />
+              <InputField
+                icon={Calendar}
+                label="Date of Birth"
+                type="date"
+                name="dob"
+                value={formData.dob}
+                onChange={handleChange}
+                error={errors.dob}
+              />
+              <SelectField
+                icon={User}
+                label="Gender"
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                error={errors.gender}
+              >
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </SelectField>
             </div>
+          </FormSection>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Student ID</label>
-              <input
+          <FormSection title={<><GraduationCap className="inline-block" /> Academic Details</>}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                icon={BookOpen}
+                label="Roll Number"
                 type="text"
-                name="studentId"
+                name="rollNo"
+                value={formData.rollNo}
                 onChange={handleChange}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Enter your student ID"
+                error={errors.rollNo}
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Department</label>
-              <select
+              <InputField
+                icon={School}
+                label="Department"
+                type="text"
                 name="department"
+                value={formData.department}
                 onChange={handleChange}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">Select department</option>
-                <option value="computer-science">Computer Science</option>
-                <option value="electrical">Electrical Engineering</option>
-                <option value="mechanical">Mechanical Engineering</option>
-                <option value="civil">Civil Engineering</option>
-                <option value="chemical">Chemical Engineering</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Year</label>
-              <select
-                name="year"
+                error={errors.department}
+              />
+              <InputField
+                icon={School}
+                label="Division"
+                type="text"
+                name="division"
+                value={formData.division}
                 onChange={handleChange}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                error={errors.division}
+              />
+              <SelectField
+                icon={School}
+                label="Admission Type"
+                name="admissionType"
+                value={formData.admissionType}
+                onChange={handleChange}
+                error={errors.admissionType}
               >
-                <option value="">Select year</option>
-                <option value="1">First Year</option>
-                <option value="2">Second Year</option>
-                <option value="3">Third Year</option>
-                <option value="4">Fourth Year</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium mb-1">Proof Document</label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="mx-auto h-32 w-auto object-cover rounded" />
-              ) : (
-                <div className="space-y-2">
-                  <div className="text-gray-600">Upload a file or drag and drop</div>
-                  <div className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</div>
-                </div>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="w-full mt-2"
+                <option value="regular">Regular</option>
+                <option value="lateral">Lateral</option>
+              </SelectField>
+              <InputField
+                icon={Calendar}
+                label="Admission Date"
+                type="date"
+                name="admissionDate"
+                value={formData.admissionDate}
+                onChange={handleChange}
+                error={errors.admissionDate}
+              />
+              <InputField
+                icon={Calendar}
+                label="Current Year"
+                type="date"
+                name="currentYear"
+                value={formData.currentYear}
+                onChange={handleChange}
+                error={errors.currentYear}
               />
             </div>
-          </div>
+          </FormSection>
 
-          <button 
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
-          >
-            Save Profile
-          </button>
+          <FormSection title={<><Phone className="inline-block" /> Contact Information</>}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                icon={Phone}
+                label="Phone Number"
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                error={errors.phone}
+              />
+              <SelectField
+                icon={Home}
+                label="Accommodation"
+                name="hostelStatus"
+                value={formData.hostelStatus}
+                onChange={handleChange}
+                error={errors.hostelStatus}
+              >
+                <option value="hostel">Hostel</option>
+                <option value="day_scholar">Day Scholar</option>
+              </SelectField>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-amber-500/80 mb-1.5">Address</label>
+                <textarea
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  className="w-full p-3 rounded-xl bg-[#1a1a1d] text-white border border-amber-500/20 hover:border-amber-500/40 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200"
+                  rows="3"
+                />
+                {errors.address && <p className="text-red-400 text-sm mt-1">{errors.address}</p>}
+              </div>
+            </div>
+          </FormSection>
+
+          <FormSection title={<><AlertCircle className="inline-block" /> Emergency Contact</>}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <InputField
+                icon={User}
+                label="Contact Name"
+                type="text"
+                name="emergencyContact.name"
+                value={formData.emergencyContact.name}
+                onChange={handleChange}
+                error={errors['emergencyContact.name']}
+              />
+              <InputField
+                icon={User}
+                label="Relation"
+                type="text"
+                name="emergencyContact.relation"
+                value={formData.emergencyContact.relation}
+                onChange={handleChange}
+                error={errors['emergencyContact.relation']}
+              />
+              <InputField
+                icon={Phone}
+                label="Contact Number"
+                type="tel"
+                name="emergencyContact.contact"
+                value={formData.emergencyContact.contact}
+                onChange={handleChange}
+                error={errors['emergencyContact.contact']}
+              />
+            </div>
+          </FormSection>
+
+          <FormSection title={<><FileText className="inline-block" /> Additional Information</>}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <SelectField
+                icon={Heart}
+                label="Blood Group"
+                name="bloodGroup"
+                value={formData.bloodGroup}
+                onChange={handleChange}
+                error={errors.bloodGroup}
+              >
+                <option value="">Select Blood Group</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+              </SelectField>
+              <div>
+                <label className="block text-sm font-medium text-amber-500/80 mb-1.5">ID Proof</label>
+               
+                <input
+                  type="file"
+                  onChange={(e) => handleImageChange(e, 'idProof')}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="w-full text-sm text-amber-500/60 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-amber-500 file:text-white hover:file:bg-amber-600 transition-all duration-200"
+                />
+                {errors.idProof && (
+                  <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" /> {errors.idProof}
+                  </p>
+                )}
+                <p className="text-amber-500/40 text-sm mt-1">Accepted formats: PDF, JPG, PNG (Max 5MB)</p>
+              </div>
+            </div>
+          </FormSection>
+
+          <div className="flex justify-end gap-4 pt-6">
+            <button
+              type="button"
+              onClick={() => setFormData({
+                name: "John Doe",
+                email: "john.doe@example.com",
+                profilePic: null,
+                dob: "",
+                gender: "",
+                phone: "",
+                rollNo: "",
+                department: "",
+                division: "",
+                admissionType: "regular",
+                admissionDate: "",
+                currentYear: "",
+                passingYear: "",
+                hostelStatus: "hostel",
+                address: "",
+                emergencyContact: { name: "", relation: "", contact: "" },
+                bloodGroup: "",
+                idProof: null,
+              })}
+              className="px-6 py-2.5 rounded-xl border border-amber-500/20 text-amber-500 hover:bg-amber-500/10 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200"
+            >
+              Reset Form
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium hover:from-amber-600 hover:to-amber-700 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200 flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              Submit Form
+            </button>
+          </div>
         </form>
+
+        {/* Success Modal - Can be implemented if needed */}
+         {/* <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+          <div className="bg-[#1a1a1d] p-6 rounded-2xl shadow-xl border border-amber-500/10 max-w-md w-full mx-4">
+            <h3 className="text-2xl font-bold text-amber-500">Success!</h3>
+            <p className="text-gray-300 mt-2">Your form has been submitted successfully.</p>
+            <button className="mt-4 w-full px-4 py-2 bg-amber-500 text-white rounded-xl">
+              Close
+            </button>
+          </div>
+        </div>  */}
       </div>
     </div>
-  ); 
+  );
 };
 
 export default SimpleStudentForm;

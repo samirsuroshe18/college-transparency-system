@@ -15,6 +15,7 @@ const StudentElectionPanel = () => {
   const [selectedElectionId, setSelectedElectionId] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [isLightMode, setIsLightMode] = useState(true);
 
   useEffect(() => {
     fetchElections();
@@ -75,70 +76,56 @@ const StudentElectionPanel = () => {
     setIsApplying(true);
   };
 
-  const handleApplySubmit = async () => {
-    if (!userData?.user) {
-      setError("User not logged in.");
-      return;
-    }
-
-    const payload = {
-      electionId: selectedElectionId,
-      userId: userData.user._id,
-      name: userData.user.name,
-      class: userData.user.class || "N/A",
-      agenda: applicationData.agenda,
-      experience: applicationData.experience,
-    };
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/applications/${selectedElectionId}/apply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        setSuccess("Application submitted! Waiting for admin approval.");
-        setIsApplying(false);
-        setApplicationData({ agenda: "", experience: "" });
-        fetchUserApplications();
-      } else {
-        setError(result.message || "Failed to submit application.");
-      }
-    } catch (error) {
-      console.error("Error submitting application:", error);
-      setError("Server Error.");
-    }
-  };
-
-  // ✅ Function to check if the user has already applied
   const hasUserApplied = (electionId) => {
     return userApplications.some((app) => app.electionId === electionId);
   };
 
   return (
-    <div className="min-h-screen bg-[#131314] text-white p-6">
-      <h1 className="text-3xl font-bold text-amber-500">Student Election Panel</h1>
+    <div className={`min-h-screen p-6 transition-all duration-300 ${isLightMode ? 'bg-gray-100 text-gray-900' : 'bg-gray-900 text-white'}`}>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-blue-600">Student Election Panel</h1>
+        <Button onClick={() => setIsLightMode(!isLightMode)} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-md">
+          {isLightMode ? "Dark Mode" : "Light Mode"}
+        </Button>
+      </div>
 
-      {/* 📅 Upcoming Elections */}
       <section className="mt-10">
-        <h2 className="text-lg font-semibold text-amber-400">Upcoming Elections</h2>
+        <h2 className="text-lg font-semibold text-red-500">Live Elections</h2>
+        <Accordion type="single" collapsible>
+          {liveElections.length > 0 ? (
+            liveElections.map((election, index) => (
+              <AccordionItem key={index} value={`live-${index}`} className="mt-4">
+                <AccordionTrigger className="bg-white dark:bg-gray-800 p-4 text-left text-gray-800 dark:text-gray-300 font-semibold rounded-xl shadow-md border-0">
+                  {election.title}
+                </AccordionTrigger>
+                <AccordionContent className="p-5 bg-white dark:bg-gray-800 rounded-xl mt-2 shadow-md">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Voting is live until <span className="text-red-500 font-medium">{formatDate(election.applicationDeadline)}</span>
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+            ))
+          ) : (
+            <p className="text-gray-500 mt-4">No live elections.</p>
+          )}
+        </Accordion>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold text-blue-500">Upcoming Elections</h2>
         <Accordion type="single" collapsible>
           {elections.length > 0 ? (
             elections.map((election, index) => (
               <AccordionItem key={index} value={`upcoming-${index}`} className="mt-4">
-                <AccordionTrigger className="bg-[#1a1a1d] p-4 text-left text-gray-300 font-semibold rounded-xl shadow-md border-0">
+                <AccordionTrigger className="bg-white dark:bg-gray-800 p-4 text-left text-gray-800 dark:text-gray-300 font-semibold rounded-xl shadow-md border-0">
                   {election.title}
                 </AccordionTrigger>
-                <AccordionContent className="p-5 bg-[#1a1a1d] rounded-xl mt-2 shadow-md">
-                  <p className="text-gray-400">
-                    Applications open until <span className="text-amber-300 font-medium">{formatDate(election.applicationDeadline)}</span>
+                <AccordionContent className="p-5 bg-white dark:bg-gray-800 rounded-xl mt-2 shadow-md">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Applications open until <span className="text-blue-500 font-medium">{formatDate(election.applicationDeadline)}</span>
                   </p>
-
-                  {/* ✅ Disable Apply button if the user has already applied */}
                   {hasUserApplied(election._id) ? (
-                    <Button disabled className="mt-2 bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md">
+                    <Button disabled className="mt-2 bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md">
                       Already Applied
                     </Button>
                   ) : (
@@ -154,57 +141,6 @@ const StudentElectionPanel = () => {
           )}
         </Accordion>
       </section>
-
-      {/* 📝 Apply Modal */}
-      {isApplying && (
-        <Dialog open={isApplying} onOpenChange={setIsApplying}>
-          <DialogContent className="bg-[#1a1a1d] border border-gray-700 text-white p-6 rounded-lg">
-            <DialogHeader>
-              <h3 className="text-lg font-bold text-gray-300">Apply as Candidate</h3>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <Input value={userData.user.name} readOnly className="bg-[#2a2a2d] text-gray-300 border border-gray-600 px-3 py-2 w-full rounded-lg" />
-              <Input placeholder="Your Agenda..." onChange={(e) => setApplicationData({ ...applicationData, agenda: e.target.value })} className="bg-[#2a2a2d] text-gray-300 border border-gray-600 px-3 py-2 w-full rounded-lg" />
-              <textarea placeholder="Your Experience..." onChange={(e) => setApplicationData({ ...applicationData, experience: e.target.value })} className="bg-[#2a2a2d] text-gray-300 border border-gray-600 px-3 py-2 w-full rounded-lg h-24 resize-none" />
-            </div>
-
-            <DialogFooter className="mt-4">
-              <Button onClick={handleApplySubmit} className="bg-blue-500 hover:bg-blue-600 w-full">
-                Submit Application
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* 📌 Live Elections Section */}
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-green-400">Live Elections</h2>
-        <Accordion type="single" collapsible>
-          {liveElections.length > 0 ? (
-            liveElections.map((election, index) => (
-              <AccordionItem key={index} value={`live-${index}`} className="mt-4">
-                <AccordionTrigger className="bg-[#1a1a1d] p-4 text-left text-gray-300 font-semibold rounded-xl shadow-md border-0">
-                  {election.title}
-                </AccordionTrigger>
-                <AccordionContent className="p-5 bg-[#1a1a1d] rounded-xl mt-2 shadow-md">
-                  <p className="text-gray-400">
-                    Voting ends on{" "}
-                    <span className="text-green-300 font-medium">{formatDate(election.votingDeadline)}</span>
-                  </p>
-                  <Button className="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-md">
-                    Vote Now
-                  </Button>
-                </AccordionContent>
-              </AccordionItem>
-            ))
-          ) : (
-            <p className="text-gray-500 mt-4">No live elections at the moment.</p>
-          )}
-        </Accordion>
-      </section>
-
     </div>
   );
 };
