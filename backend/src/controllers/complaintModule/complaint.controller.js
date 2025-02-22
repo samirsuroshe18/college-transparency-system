@@ -1,92 +1,128 @@
-import dotenv from "dotenv";
-dotenv.config();
 import Complaint from "../../models/ComplaintModule/complaint.model.js";
+import { uploadOnCloudinary } from "../../utils/cloudinary.js";
 import axios from "axios";
-import { uploadOnCloudinary } from '../../utils/cloudinary.js';
+import fs from "fs";
 
-const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY; // Ensure this is set in your .env
+// Hugging Face API Key
+const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
 
-// 🔥 Function to moderate content using Hugging Face
-async function moderateContent(text) {
-    try {
-        const response = await axios.post(
-            "https://api-inference.huggingface.co/models/IMSyPP/profanity-check", // Profanity detection model
-            { inputs: text },
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${HUGGING_FACE_API_KEY}`
-                }
-            }
-        );
+// ✅ Moderate Text Content
+async function moderateText(text) {
+  try {
+    const response = await axios.post(
+      "https://api-inference.huggingface.co/models/unitary/toxic-bert",
+      { inputs: text },
+      {
+        headers: {
+          Authorization: `Bearer ${HUGGING_FACE_API_KEY}`,
+        },
+      }
+    );
 
-        const prediction = response.data;
-        const isProfane = prediction?.[0]?.label === "profane";
-        const confidence = prediction?.[0]?.score || 0;
-
-        return { isProfane, confidence };
-    } catch (error) {
-        console.error("❌ Hugging Face API Error:", error.response?.data || error.message);
-        return { isProfane: false, confidence: 0 }; // Default to safe if API fails
-    }
+    const toxicity = response.data[0]?.find(item => item.label === "toxic")?.score || 0;
+    return toxicity > 0.8 ? "Toxic" : "Safe";
+  } catch (error) {
+    console.error("Text moderation error:", error.response?.data || error.message);
+    return "Safe";
+  }
 }
 
-// 🚀 Updated submitComplaint controller
+// ✅ Scan Image for NSFW
+async function scanImage(imagePath) {
+  const imageBuffer = fs.readFileSync(imagePath);
+  console.log("🔍 Starting NSFW scan for:", imagePath);
+
+  try {
+    const response = await axios.post(
+      "https://api-inference.huggingface.co/models/henryruhs/nsfw_model",
+      imageBuffer,
+      {
+        headers: {
+          Authorization: `Bearer ${HUGGING_FACE_API_KEY}`,
+          "Content-Type": "application/octet-stream",
+        },
+      }
+    );
+
+    console.log("✅ NSFW API Response:", response.data);
+    const nsfwScore = response.data.nsfw_score || 0;
+    console.log(`⚡ NSFW Score: ${nsfwScore}`);
+    return nsfwScore > 0.8 ? "NSFW" : "Safe";
+  } catch (error) {
+    console.error("Image NSFW error:", error.response?.data || error.message);
+    return "Safe";
+  }
+}
+
+// 🚀 Submit Complaint Controller
 export async function submitComplaint(req, res) {
-    try {
-        console.log("📥 Received Payload:", req.body);
-        const { title, description, isAnonymous, revealThreshold } = req.body;
+  try {
+    const { title, description } = req.body;
+    const mediaFiles = req.files || []; // Multer will populate this
 
-        const file = req.file.path;
-        const path = await uploadOnCloudinary(file);
-
-        if (!path?.url) {
-            throw new ApiError(500, "Failed to upload image ");
-        }
-
-
-        if (!title || !description) {
-            return res.status(400).json({ message: "Title and description are required" });
-        }
-
-        // ⚡ Moderate the description for vulgar/profane content
-        const { isProfane, confidence } = await moderateContent(description);
-
-        if (isProfane && confidence > 0.7) { // Threshold of 70% confidence
-            return res.status(400).json({
-                message: "Your complaint contains inappropriate content.",
-                confidence: confidence
-            });
-        }
-
-        const userId = isAnonymous ? null : req.user?._id;
-
-
-        const newComplaint = new Complaint({
-            title,
-            description,
-            isAnonymous: isAnonymous || false,
-            userId,
-            revealThreshold: revealThreshold || 5,
-            imagevideo: path.url
-        });
-
-
-        await newComplaint.save();
-
-        res.status(201).json({
-            message: "Complaint submitted successfully",
-            complaint: {
-                id: newComplaint._id,
-                title: newComplaint.title,
-                description: newComplaint.description,
-                isAnonymous: newComplaint.isAnonymous,
-                revealThreshold: newComplaint.revealThreshold,
-                imagevideo: newComplaint.imagevideo
-            }
-        });
-    } catch (error) {
-        console.error("❌ Error submitting complaint:", error);
-        res.status(500).json({ message: "Error submitting complaint" });
+    if (!title || !description) {
+      return res.status(400).json({ message: "Title and description are required" });
     }
+
+    // ✅ Moderate Text
+    const textStatus = await moderateText(description);
+    if (textStatus === "Toxic") {
+      return res.status(400).json({ message: "Inappropriate content detected in description." });
+    }
+
+    const uploadedMedia = [];
+
+    // ✅ Process Media Files
+    for (const file of mediaFiles) {
+      const fileType = file.mimetype;
+      console.log(`🔄 Processing file: ${file.originalname}, Type: ${fileType}`);
+
+      if (fileType.startsWith("image/")) {
+        const imageStatus = await scanImage(file.path);
+        if (imageStatus === "NSFW") {
+          fs.unlinkSync(file.path); // Delete local file
+          return res.status(400).json({ message: "NSFW content detected in image." });
+        }
+
+        // Upload Safe Image to Cloudinary
+        const cloudRes = await uploadOnCloudinary(file.path, "image");
+        uploadedMedia.push({
+          url: cloudRes.secure_url,
+          public_id: cloudRes.public_id,
+          mediaType: "image",
+        });
+        fs.unlinkSync(file.path); // Delete local file
+      }
+
+      if (fileType.startsWith("video/")) {
+        // For videos, implement frame extraction + NSFW scan in future
+        const cloudRes = await uploadOnCloudinary(file.path, "video");
+        uploadedMedia.push({
+          url: cloudRes.secure_url,
+          public_id: cloudRes.public_id,
+          mediaType: "video",
+        });
+        fs.unlinkSync(file.path); // Delete local file
+      }
+    }
+
+    // ✅ Save Complaint with default fields
+    const newComplaint = new Complaint({
+      title,
+      description,
+      media: uploadedMedia,
+      votes: [],
+      isRevealed: false,
+      revealThreshold: 5
+    });
+
+    await newComplaint.save();
+    res.status(201).json({
+      message: "Complaint submitted successfully. Complaints undergo real-time moderation; vulgar content is blocked (no inappropriate images/videos).",
+      complaint: newComplaint
+    });
+  } catch (error) {
+    console.error("Error submitting complaint:", error);
+    res.status(500).json({ message: "Error submitting complaint" });
+  }
 }
