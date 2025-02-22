@@ -30,7 +30,6 @@ const userSchema = new Schema({
 
     
     // Fields specific to Students
-    studentId: { type: String, unique: true, sparse: true },
     department: { type: String },
     currentYear: { type: String },
     passingYear: { type: String },

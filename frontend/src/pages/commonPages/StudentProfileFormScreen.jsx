@@ -73,7 +73,7 @@ const SelectField = ({ icon: Icon, label, children, error, ...props }) => (
 );
 
 const StudentProfileFormScreen = () => {
-  const user = useSelector((state) => state.auth);
+  const user = useSelector((state) => state.auth.userData);
 
   const [formData, setFormData] = useState({
     name: user.name || "John Doe",
