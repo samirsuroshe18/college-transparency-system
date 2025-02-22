@@ -2,59 +2,61 @@ import React, { useState } from "react";
 import { TextField, Button, Card, CardContent, Typography, Avatar, Grid } from "@mui/material";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import { amber } from "@mui/material/colors";
-
+import axios from "axios";
 
 const WallOfShameAdmin = () => {
-    const [rollNo, setRollNo] = useState("");
-    const [remark, setRemark] = useState("");
-    const [students, setStudents] = useState([
-        {
-            rollNo: "23CS101",
-            name: "Rahul Sharma",
-            class: "CSE 3rd Year",
-            branch: "Computer Science",
-            remark: "Caught cheating in exams",
-            profilePic: "https://randomuser.me/api/portraits/men/1.jpg",
-        },
-        {
-            rollNo: "23ME207",
-            name: "Anjali Patil",
-            class: "ME 2nd Year",
-            branch: "Mechanical",
-            remark: "Misbehaved in class",
-            profilePic: "https://randomuser.me/api/portraits/women/2.jpg",
-        },
-    ]);
+    const [studentId, setStudentId] = useState("");
+    const [description, setDescription] = useState("");
+    const [file, setFile] = useState(null);
+    const [students, setStudents] = useState([]);
 
-    // Simulate fetching student details
-    const fetchStudentDetails = (rollNo) => {
-        const mockData = {
-            "23CS101": { name: "Rahul Sharma", class: "CSE 3rd Year", branch: "Computer Science", profilePic: "https://randomuser.me/api/portraits/men/1.jpg" },
-            "23ME207": { name: "Anjali Patil", class: "ME 2nd Year", branch: "Mechanical", profilePic: "https://randomuser.me/api/portraits/women/2.jpg" },
-            "23EE305": { name: "Siddharth Deshmukh", class: "EE Final Year", branch: "Electrical", profilePic: "https://randomuser.me/api/portraits/men/3.jpg" },
-        };
-        return mockData[rollNo] || null;
+    const handleFileChange = (e) => {
+        setFile(e.target.files[0]);
     };
 
-    const handleAddStudent = () => {
-        const studentDetails = fetchStudentDetails(rollNo);
-        if (!studentDetails) {
-            alert("Student not found!");
+    const handleAddStudent = async () => {
+        if (!studentId || !description) {
+            alert("Student ID and Description are required!");
             return;
         }
 
-        const newStudent = {
-            rollNo,
-            name: studentDetails.name,
-            class: studentDetails.class,
-            branch: studentDetails.branch,
-            remark,
-            profilePic: studentDetails.profilePic,
-        };
+        try {
+            const formData = new FormData();
+            formData.append("studentId", studentId);
+            formData.append("description", description);
+            if (file) formData.append("file", file);
 
-        setStudents([...students, newStudent]);
-        setRollNo("");
-        setRemark("");
+            // Fetch student details from the backend
+            const response = await axios.post("/api/v1/fetch", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                }
+            });
+
+            const studentDetails = response.data;
+
+            if (!studentDetails) {
+                alert("Student not found!");
+                return;
+            }
+
+            const newStudent = {
+                studentId,
+                name: studentDetails.name,
+                class: studentDetails.class,
+                branch: studentDetails.branch,
+                remark: description,
+                profilePic: studentDetails.profilePic,
+            };
+
+            setStudents([...students, newStudent]);
+            setStudentId("");
+            setDescription("");
+            setFile(null);
+        } catch (error) {
+            console.error("Error fetching student details:", error);
+            alert("Failed to fetch student details.");
+        }
     };
 
     return (
@@ -64,17 +66,17 @@ const WallOfShameAdmin = () => {
             </Typography>
 
             {/* Input Form */}
-            <TextField fullWidth label="Roll Number" value={rollNo} onChange={(e) => setRollNo(e.target.value)} margin="normal" />
-            <TextField fullWidth label="Remark" value={remark} onChange={(e) => setRemark(e.target.value)} margin="normal" multiline rows={2} />
+            <TextField fullWidth label="Student ID" value={studentId} onChange={(e) => setStudentId(e.target.value)} margin="normal" />
+            <TextField fullWidth label="Description" value={description} onChange={(e) => setDescription(e.target.value)} margin="normal" multiline rows={2} />
+            <input type="file" onChange={handleFileChange} style={{ margin: "10px 0" }} />
             <Button
                 variant="contained"
                 sx={{ backgroundColor: amber[600], "&:hover": { backgroundColor: amber[800] } }}
                 onClick={handleAddStudent}
                 fullWidth
             >
-               <b> Add to Wall of Shame </b>
+                <b> Add to Wall of Shame </b>
             </Button>
-
 
             {/* Shame List */}
             <Typography variant="h5" gutterBottom style={{ marginTop: "20px" }}>
@@ -90,7 +92,7 @@ const WallOfShameAdmin = () => {
                             <Grid item xs>
                                 <Typography variant="h6">{student.name}</Typography>
                                 <Typography variant="body2">
-                                    <strong>Roll No:</strong> {student.rollNo} | <strong>Class:</strong> {student.class} | <strong>Branch:</strong> {student.branch}
+                                    <strong>Student ID:</strong> {student.studentId} | <strong>Class:</strong> {student.class} | <strong>Branch:</strong> {student.branch}
                                 </Typography>
                                 <Typography color="error" style={{ color: amber[600] }}><strong>Remark:</strong> {student.remark}</Typography>
                             </Grid>

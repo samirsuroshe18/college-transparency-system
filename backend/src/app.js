@@ -39,7 +39,7 @@ import adminElectionRouter from "./routes/electionModule/election.routes.js";
 import candidateRouter from "./routes/electionModule/candidate.routes.js";
 import candidateApplicationRouter from "./routes/electionModule/candidateApplication.routes.js";
 import voteRoutes from "./routes/electionModule/vote.routes.js";
-
+import cheatingRoutes from "./routes/cheatingModule/cheating.routes.js"
 import applicationRoutes from "./routes/applicationModule/application.routes.js";
 
 //routes declaration
@@ -53,7 +53,7 @@ app.use("/api/v1/candidates", candidateRouter);
 app.use("/api/v1/applications", candidateApplicationRouter);
 app.use("/api/v1", voteRoutes);
 app.use("/api/v1/application", applicationRoutes);
-
+app.use("/api/v1/cheating", cheatingRoutes);
 app.use(errorHandler);
 
 export default app;
