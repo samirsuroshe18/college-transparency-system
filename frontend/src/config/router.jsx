@@ -25,6 +25,7 @@ import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
 import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
 import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
+import VotingPage from "../pages/StudentElection/VotingPage.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -42,6 +43,7 @@ const router = createBrowserRouter(
           {/* Student Election Module Routes */}
           <Route path="election" element={<StudentElectionPanel />} />
           <Route path="admin-election" element={<AdminElectionPanel />} />
+          <Route path="voting-page" element={<VotingPage />} />
           
           {/* Pending Request Routes */}
           <Route path="pending-request" element={<PendingProfilesPage />} />
