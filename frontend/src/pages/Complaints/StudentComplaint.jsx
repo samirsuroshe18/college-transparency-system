@@ -1,95 +1,104 @@
 import React, { useState } from "react";
+import axios from "axios";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
-import { TextField, Checkbox, FormControlLabel, Avatar } from "@mui/material";
-import { amber } from "@mui/material/colors";
-import WarningIcon from "@mui/icons-material/Warning";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-const dummyComplaints = [
-  { id: 1, title: "Noise in Library", description: "Too much disturbance.", anonymous: true },
-  { id: 2, title: "WiFi Issues", description: "Poor connectivity in hostel.", anonymous: false },
-];
-
-const StudentComplaint = () => {
-  const [open, setOpen] = useState(false);
+export default function StudentComplaint() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [anonymous, setAnonymous] = useState(false);
-  const [complaints, setComplaints] = useState(dummyComplaints);
+  const [file, setFile] = useState(null);
+  const [complaintId, setComplaintId] = useState("");
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = () => {
-    const newComplaint = {
-      id: complaints.length + 1,
-      title,
-      description,
-      anonymous,
-    };
-    setComplaints([...complaints, newComplaint]);
-    setOpen(false);
+  const handleComplaintSubmit = async (e) => {
+    e.preventDefault();
+    if (!title || !description) {
+      setMessage("Title and description are required.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    if (file) {
+      formData.append("content", file);
+    }
+
+    try {
+      const res = await axios.post("http://localhost:8000/api/v1/complaints/submit-complaint", formData);
+      alert("Complaint Submitted")
+      console.log(alert)
+    } catch (error) {
+      console.error("Error submitting complaint:", error);
+      setMessage(error.response?.data?.message || "Error submitting complaint.");
+    }
+  };
+
+  const handleVoteToReveal = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post(`http://localhost:8000/api/v1/complaints/vote-to-reveal/${complaintId}`);
+      alert("Vote Recorded")
+      console.log(res)
+    } catch (error) {
+      console.error("Error voting to reveal:", error);
+      setMessage(error.response?.data?.message || "Error voting to reveal.");
+    }
   };
 
   return (
-    <div className="bg-[#131314] text-white p-6 rounded-xl shadow-lg">
-      <h2 className="text-2xl font-bold mb-4 text-amber-400">Complaint Box</h2>
-      <Button className="bg-amber-500 hover:bg-amber-600" onClick={() => setOpen(true)}>
-        Post a Complaint
-      </Button>
+    <div className="p-6 space-y-6">
+      <Card>
+        <CardContent className="space-y-4">
+          <h2 className="text-xl font-bold">Submit Complaint</h2>
+          <form onSubmit={handleComplaintSubmit} className="space-y-4">
+            <Label>Title:</Label>
+            <Input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter Title"
+              required
+            />
+            <Label>Description:</Label>
+            <Input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter Description"
+              required
+            />
+            <Label>Complaint Content (File):</Label>
+            <Input type="file" onChange={(e) => setFile(e.target.files[0])} />
+            <Button type="submit">Submit</Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      {/* Complaint Submission Modal */}
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle className="bg-[#131314] text-amber-400">New Complaint</DialogTitle>
-        <DialogContent className="bg-[#131314] text-white">
-          <TextField
-            fullWidth
-            label="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            margin="dense"
-            variant="outlined"
-            className="text-white"
-            InputProps={{ style: { color: "white" } }}
-          />
-          <TextField
-            fullWidth
-            label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            margin="dense"
-            variant="outlined"
-            multiline
-            rows={3}
-            InputProps={{ style: { color: "white" } }}
-          />
-          <FormControlLabel
-            control={<Checkbox checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />}
-            label="Submit Anonymously"
-          />
-          <Button className="bg-amber-500 hover:bg-amber-600 mt-3" fullWidth onClick={handleSubmit}>
-            Submit Complaint
-          </Button>
-        </DialogContent>
-      </Dialog>
+      <Card>
+        <CardContent className="space-y-4">
+          <h2 className="text-xl font-bold">Vote to Reveal</h2>
+          <form onSubmit={handleVoteToReveal} className="space-y-4">
+            <Label>Complaint ID:</Label>
+            <Input
+              type="text"
+              value={complaintId}
+              onChange={(e) => setComplaintId(e.target.value)}
+              placeholder="Enter Complaint ID"
+              required
+            />
+            <Button type="submit">Vote</Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      {/* Complaint List */}
-      <div className="mt-4">
-        {complaints.map((complaint) => (
-          <div key={complaint.id} className="flex items-center bg-[#1E1E1E] p-4 my-2 rounded-lg">
-            <Avatar sx={{ bgcolor: amber[500] }}>{complaint.anonymous ? "A" : "S"}</Avatar>
-            <div className="ml-3">
-              <h3 className="font-semibold">{complaint.title}</h3>
-              <p className="text-gray-400">{complaint.description}</p>
-              {complaint.anonymous && (
-                <div className="flex items-center text-red-400 text-sm">
-                  <WarningIcon fontSize="small" className="mr-1" />
-                  Anonymous Submission
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+      {message && (
+        <div className="p-4 bg-gray-100 rounded-lg shadow-md">
+          <p>{message}</p>
+        </div>
+      )}
     </div>
   );
-};
-
-export default StudentComplaint;
+}

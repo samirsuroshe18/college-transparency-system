@@ -15,7 +15,7 @@ router.get("/candidate/:candidateId", getCandidateById);
 router.post("/elections/:id/apply", async (req, res) => {
     try {
       const { name, department } = req.body;
-      const election = await Election.findById(req.params.id);
+      const election = await election.findById(req.params.id);
   
       if (!election) {
         return res.status(404).json({ message: "Election not found" });
