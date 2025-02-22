@@ -1,15 +1,18 @@
 import Application from "../../models/applicationModel/application.model.js";
+import  sendEmail  from "../../utils/nodemailer.js"; // ✅ Use import instead of require
+
+
 
 // Create Application
 export const createApplication = async (req, res) => {
     try {
-        const { title, description, category, submittedBy } = req.body;
+        const { title, description, category } = req.body;
 
-        if (!title || !description || !category || !submittedBy) {
+        if (!title || !description || !category ) {
             return res.status(400).json({ message: "All fields are required" });
         }
         // TODO: convert string to moongose object id and then place in the submitttedBy
-        const newApplication = new Application({ title, description, category, submittedBy }); //submiitedBY:
+        const newApplication = new Application({ title, description, category, submittedBy:req.user._id }); //submiitedBY:
         await newApplication.save();
 
         res.status(201).json({
@@ -37,9 +40,7 @@ export const getApplications = async (req, res) => {
 // Get a Single Application by ID
 export const getApplicationById = async (req, res) => {
     try {
-        const { id } = req.params;
-        const application = await Application.findById(id).populate("submittedBy", "name email");
-
+        const application = await Application.find({submittedBy:req.user._id}).populate("submittedBy", "name email");
         if (!application) return res.status(404).json({ message: "Application not found" });
 
         res.json(application);
@@ -48,13 +49,12 @@ export const getApplicationById = async (req, res) => {
     }
 };
 
-// Update Application Status
 export const updateApplicationStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status, adminId, comment } = req.body;
 
-        // ✅ 1. Validate input
+        // ✅ Validate input
         if (!status || !adminId) {
             return res.status(400).json({ message: "Missing required fields" });
         }
@@ -63,46 +63,56 @@ export const updateApplicationStatus = async (req, res) => {
             return res.status(400).json({ message: "Invalid status value" });
         }
 
-        // ✅ 2. Validate application ID format (Prevent MongoDB error)
         if (!id.match(/^[0-9a-fA-F]{24}$/)) {
             return res.status(400).json({ message: "Invalid application ID format" });
         }
 
-        // ✅ 3. Find application
-        const application = await Application.findById(id);
+        // ✅ Find application
+        const application = await Application.findById(id).populate("submittedBy"); // Ensure user details are available
         if (!application) {
             return res.status(404).json({ message: "Application not found" });
         }
 
-        // ✅ 4. Update status and append comment
+        // ✅ Get user email
+        const userEmail = application.submittedBy.email; // ✅ Ensure submittedBy contains user info
+
+        // ✅ Update application
         application.comment = application.comment
             ? `${application.comment}\nAdmin: ${comment}`
             : `Admin: ${comment}`;
-
         application.status = status;
         await application.save();
 
-        // ✅ 5. Log approval/rejection in Approval Model
-        const approvalRecord = new Approval({
-            applicationId: id,
-            approvedBy: adminId,
-            decision: status,
-            comment,
-        });
+        // ✅ Send email notification
+        if (userEmail) {
+            let emailSubject = `Your Application Status: ${status.toUpperCase()}`;
+            let emailMessage = `Hello,\n\nYour application titled "${application.title}" has been ${status}.\n\nAdmin Comment: ${comment}\n\nThank you.`;
 
-        await approvalRecord.save();
+            sendEmail(userEmail, emailSubject, emailMessage); // 📩 Send email
+        } else {
+            console.warn("🚨 User email not found for sending notification.");
+        }
 
-        res.json({
-            message: "Application status updated",
-            application,
-            approval: approvalRecord,
-        });
+        // // ✅ Log decision
+        // const approvalRecord = new Approval({
+        //     applicationId: id,
+        //     approvedBy: adminId,
+        //     decision: status,
+        //     comment,
+        // });
+
+        // await approvalRecord.save();
+
+        // res.json({
+        //     message: "Application status updated & email sent",
+        //     application,
+        //     approval: approvalRecord,
+        // });
     } catch (error) {
-        console.error("Error updating application status:", error);
+        console.error("❌ Error updating application status:", error);
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 };
-
 
 // Update Application Review Status
 export const updateApplicationReviewStatus = async (req, res) => {

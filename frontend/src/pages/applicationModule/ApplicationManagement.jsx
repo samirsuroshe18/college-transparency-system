@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { showNotificationWithTimeout } from "../../redux/slices/notificationSlice";
+import { handleAxiosError } from "../../utils/handleAxiosError";
 
 const ApplicationManagement = () => {
+    const dispatch = useDispatch();
     const [applications, setApplications] = useState([]);
     const [message, setMessage] = useState("");
     const [showPopup, setShowPopup] = useState(false);
@@ -16,17 +20,21 @@ const ApplicationManagement = () => {
     // Fetch applications from the backend
     const fetchApplications = async () => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_DOMAIN}/api/v1/application`, {
+            const response = await axios.get(`${import.meta.env.VITE_DOMAIN}/api/v1/application/get-specific-user`, {
                 withCredentials: true, // Ensure cookies are sent if needed
             });
+            dispatch(showNotificationWithTimeout({show:true,type:"success",message:"fetched"}));
             setApplications(response.data);
             setShowApplications(true);
         } catch (error) {
-            console.error("Error fetching applications:", error);
+            dispatch(showNotificationWithTimeout({show:true,type:"error",message:handleAxiosError(error)}));
             setMessage("Failed to load applications ❌");
             setShowPopup(true);
             setTimeout(() => setShowPopup(false), 3000);
         }
+
+        const user=useSelector(state=>state.auth.userData);
+        console.log(user);
     };
 
     // Handle form submission
@@ -119,6 +127,21 @@ const ApplicationManagement = () => {
                             <option value="budget">Budget</option>
                             <option value="sponsorship">Sponsorship</option>
                         </select>
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="documents">
+                            Upload Documents
+                        </label>
+                        <input
+                            type="file"
+                            name="documents"
+                            onChange={handleChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                            multiple
+                            accept=".pdf,.doc,.docx"
+                        />
+                        <p className="text-sm text-gray-500 mt-1">Accepted formats: PDF, DOC, DOCX</p>
                     </div>
 
                     <div className="flex items-center justify-between">
