@@ -1,7 +1,6 @@
 import { showNotificationWithTimeout } from '../redux/slices/notificationSlice.js';
 import axiosInstance from './config.js';
 
-
 const googleLoginUser = async (token, setLoading, dispatch) => {
     setLoading(true);
     try {
@@ -21,7 +20,6 @@ const googleLoginUser = async (token, setLoading, dispatch) => {
         throw error;
     }
 };
-
 
 const logoutUser = async (setLoading, dispatch) => {
     setLoading(true);
