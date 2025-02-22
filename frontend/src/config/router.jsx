@@ -21,14 +21,17 @@ import StudentDashboard from "../pages/dashboards/StudentDashboard.jsx";
 import FacultyDashboard from "../pages/dashboards/FacultyDashboard.jsx";
 import WallOfShameAdmin from "../pages/cheating/WallOfShameAdmin.jsx";
 import StudentShame from "../pages/cheating/StudentShame.jsx";
-import StudentComplaint from "../pages/Complaints/StudentComplaint.jsx";
-import AdminComplain from "../pages/Complaints/AdminComplaint.jsx";
+import StudentComplaint from "../pages/Complaints/StudentComplaintPage.jsx";
+import AdminComplain from "../pages/Complaints/AdminVotingPanel.jsx";
 import ProfilePendingPage from "../pages/commonPages/ProfilePendingPage.jsx";
 import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
 
 import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
 import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
+
+import Voting from "../pages/StudentElection/VotingPage.jsx"
+
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -74,10 +77,11 @@ const router = createBrowserRouter(
       <Route path="/profile-pending" element={<ProfilePendingPage />} />
       <Route path="/profile-rejected" element={<ProfileRejectedPage />} />
       <Route path="/profile-info" element={<ProfileInfoPage />} />
+      <Route path="/Voting" element={<Voting/>} />
 
       <Route path="*" element={<NotFound />} />
     </>
-  )
+   )
 );
 
 export default router;

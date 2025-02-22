@@ -47,13 +47,20 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/complaints", complaintRouter);
 app.use("/api/v1/facility", facilityRouter);
 app.use("/api/v1/booking", bookingRouter);
+
+
+app.use("/api/v1/application", applicationRoutes);
+app.use("/api/v1/cheating", cheatingRoutes);
+
+//Routing of election
 app.use("/api/v1/votes", voteRouter);
 app.use("/api/v1/admin/elections", adminElectionRouter);
 app.use("/api/v1/candidates", candidateRouter);
 app.use("/api/v1/applications", candidateApplicationRouter);
-app.use("/api/v1", voteRoutes);
-app.use("/api/v1/application", applicationRoutes);
-app.use("/api/v1/cheating", cheatingRoutes);
+
 app.use(errorHandler);
+
+
+
 
 export default app;

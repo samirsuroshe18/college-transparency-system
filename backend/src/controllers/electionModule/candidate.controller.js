@@ -36,13 +36,27 @@ export const addCandidate = async (req, res) => {
 export const getCandidates = async (req, res) => {
   try {
     const { electionId } = req.params;
-    const candidates = await Candidate.find({ electionId });
+    const electionIdtest= mongoose.Types.ObjectId.createFromHexString(electionId);
+    // Validate electionId
+    if (!electionId) {
+      return res.status(400).json({ error: "Election ID is required" });
+    }
 
-    res.json(candidates);
+    // Fetch candidates by electionId
+    const candidates = await Candidate.findOne({ electionId: electionIdtest });
+
+    // Check if candidates exist
+    if (!candidates) {
+      return res.status(404).json({ message: "No candidates found for this election" });
+    }
+
+    res.status(200).json(candidates);
   } catch (error) {
+    console.error("Error fetching candidates:", error);
     res.status(500).json({ error: "Failed to fetch candidates" });
   }
 };
+
 
 // Get a specific candidate
 export const getCandidateById = async (req, res) => {
