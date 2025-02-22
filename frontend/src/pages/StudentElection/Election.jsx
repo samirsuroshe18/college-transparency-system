@@ -14,6 +14,7 @@ const StudentElectionPanel = () => {
   const [applicationData, setApplicationData] = useState({ agenda: "", experience: "" });
   const [selectedElectionId, setSelectedElectionId] = useState(null);
 
+  console.log("User Data:", userData);
   useEffect(() => {
     fetchElections();
     fetchUserApplications();
@@ -144,7 +145,7 @@ const StudentElectionPanel = () => {
             <label className="block text-sm font-medium">Agenda</label>
             <Input type="text" name="agenda" value={applicationData.agenda} onChange={handleInputChange} />
 
-            <label className="block text-sm font-medium">Experience</label>
+            <label className="block text-sm font-medium">Description</label>
             <Input type="text" name="experience" value={applicationData.experience} onChange={handleInputChange} />
           </div>
           <DialogFooter>
