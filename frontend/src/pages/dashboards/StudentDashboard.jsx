@@ -7,8 +7,8 @@ const StudentDashboard = () => {
 
   if (!userData || !userData.user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#131314] text-white">
-        <p className="text-lg text-gray-300">Loading student data...</p>
+      <div className="min-h-screen flex items-center justify-center text-white">
+        <p className="text-lg">Loading student data...</p>
       </div>
     );
   }
@@ -18,87 +18,98 @@ const StudentDashboard = () => {
   return (
     <div className="min-h-screen bg-[#131314] text-white p-6 space-y-8">
       {/* Header */}
-      <header className="flex justify-between items-center py-4 px-6 bg-black/20 rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold text-amber-500">Student Dashboard</h1>
+      <header className="flex justify-between items-center py-4 px-6 bg-blue-600 text-white rounded-xl shadow-md">
+        <h1 className="text-2xl font-bold">Admin College Panel</h1>
       </header>
 
-      {/* Profile Section */}
-      <section className="bg-black/20 p-6 rounded-xl shadow-md flex items-center gap-6">
-        <img
-          src={student.profilePic || "https://via.placeholder.com/100"}
-          alt="Profile"
-          className="w-20 h-20 rounded-full border-2 border-amber-500"
+      {/* College Email Domain */}
+      <section className="bg-black/20 p-6 rounded-xl shadow-md">
+        <h2 className="text-lg font-semibold text-blue-400">College Details</h2>
+        <input
+          type="text"
+          placeholder="Enter college email domain (e.g., example.edu)"
+          value={collegeDomain}
+          onChange={(e) => setCollegeDomain(e.target.value)}
+          className="bg-gray-800 text-white px-4 py-2 rounded-lg outline-none w-full mt-4"
         />
-        <div>
-          <h2 className="text-lg font-semibold text-amber-400">{student.name || "Student Name"}</h2>
-          <p className="text-sm text-gray-300">
-            {student.department} | Year {student.passingYear - student.admissionYear} | Division {student.division}
-          </p>
-          <p className="text-sm text-gray-300">Roll No: {student.rollno}</p>
+      </section>
+
+      {/* Admin Emails Management */}
+      <section className="bg-black/20 p-6 rounded-xl shadow-md">
+        <h2 className="text-lg font-semibold text-blue-400">Admin Emails</h2>
+        <div className="flex gap-4 mt-4">
+          <input
+            type="email"
+            placeholder="Enter admin email"
+            value={newAdminEmail}
+            onChange={(e) => setNewAdminEmail(e.target.value)}
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg outline-none w-full"
+          />
+          <button
+            onClick={addAdminEmail}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-500 transition"
+          >
+            <FaPlus />
+          </button>
         </div>
-      </section>
-
-      {/* Student Details */}
-      <section className="bg-black/20 p-6 rounded-xl shadow-md">
-        <h2 className="text-lg font-semibold text-amber-400">Student Details</h2>
         <ul className="mt-4 space-y-2">
-          <li className="flex items-center gap-3 bg-black/30 p-3 rounded-md">
-            <FaIdCard className="text-blue-500" />
-            <span>Student ID: {student.studentId}</span>
-          </li>
-          <li className="flex items-center gap-3 bg-black/30 p-3 rounded-md">
-            <FaUniversity className="text-purple-500" />
-            <span>Admission Type: {student.admissionType} (Year {student.admissionYear})</span>
-          </li>
-          <li className="flex items-center gap-3 bg-black/30 p-3 rounded-md">
-            <FaCheckCircle className="text-green-500" />
-            <span>Current Semester: {student.currentSemester}</span>
-          </li>
-          <li className="flex items-center gap-3 bg-black/30 p-3 rounded-md">
-            <FaMapMarkerAlt className="text-red-500" />
-            <span>Address: {student.address}</span>
-          </li>
+          {adminEmails.map((email, index) => (
+            <li key={index} className="flex justify-between bg-gray-800 p-3 rounded-md">
+              <span>{email}</span>
+              <button onClick={() => removeAdminEmail(email)} className="text-red-500">
+                <FaTrash />
+              </button>
+            </li>
+          ))}
         </ul>
       </section>
 
-      {/* Contact Information */}
+      {/* Branches & Divisions */}
       <section className="bg-black/20 p-6 rounded-xl shadow-md">
-        <h2 className="text-lg font-semibold text-amber-400">Contact Information</h2>
-        <ul className="mt-4 space-y-2">
-          <li className="flex items-center gap-3 bg-black/30 p-3 rounded-md">
-            <FaPhone className="text-green-500" />
-            <span>Mobile: {student.mobileNo}</span>
-          </li>
-          <li className="flex items-center gap-3 bg-black/30 p-3 rounded-md">
-            <FaPhone className="text-green-500" />
-            <span>Parent Mobile: {student.parentMobileNo}</span>
-          </li>
-          <li className="flex items-center gap-3 bg-black/30 p-3 rounded-md">
-            <FaCheckCircle className="text-blue-500" />
-            <span>Emergency Contact: {student.emergencyContact.name} ({student.emergencyContact.relation}) - {student.emergencyContact.contactNo}</span>
-          </li>
-        </ul>
+        <h2 className="text-lg font-semibold text-blue-400">College Branches & Divisions</h2>
+        <div className="flex gap-4 mt-4">
+          <input
+            type="text"
+            placeholder="Enter branch (e.g., Computer)"
+            value={newBranch}
+            onChange={(e) => setNewBranch(e.target.value)}
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg outline-none w-full"
+          />
+          <button
+            onClick={addBranch}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-500 transition"
+          >
+            <FaPlus />
+          </button>
+        </div>
+
+        {branches.length > 0 && (
+          <div className="mt-4 space-y-4">
+            {branches.map((branch, index) => (
+              <div key={index} className="bg-gray-800 p-4 rounded-md">
+                <h3 className="text-lg font-medium text-white">{branch}</h3>
+                <input
+                  type="number"
+                  placeholder="Enter intake"
+                  className="bg-gray-700 text-white px-4 py-2 rounded-lg outline-none mt-2 w-full"
+                  onChange={(e) => updateDivisions(branch, parseInt(e.target.value))}
+                />
+                <p className="mt-2 text-gray-400">Divisions: {divisions[branch]?.join(", ") || "N/A"}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* Additional Information */}
-      <section className="bg-black/20 p-6 rounded-xl shadow-md">
-        <h2 className="text-lg font-semibold text-amber-400">Additional Information</h2>
-        <ul className="mt-4 space-y-2">
-          <li className="flex items-center gap-3 bg-black/30 p-3 rounded-md">
-            <FaUserGraduate className="text-amber-500" />
-            <span>Hostel Resident: {student.hostelResident ? "Yes" : "No"}</span>
-          </li>
-          <li className="flex items-center gap-3 bg-black/30 p-3 rounded-md">
-            <FaCheckCircle className="text-green-500" />
-            <span>Blood Group: {student.bloodGroup}</span>
-          </li>
-          <li className="flex items-center gap-3 bg-black/30 p-3 rounded-md">
-            <FaUniversity className="text-purple-500" />
-            <span>Previous School: {student.previousSchool}</span>
-          </li>
-        </ul>
-      </section>
+      {/* Save Button */}
+      <button
+        onClick={saveCollegeDetails}
+        className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-500 transition w-full"
+      >
+        Save College Details
+      </button>
     </div>
+
   );
 };
 

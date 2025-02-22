@@ -139,7 +139,7 @@ const StudentProfileFormScreen = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Form submitted:", formData);
     try {
