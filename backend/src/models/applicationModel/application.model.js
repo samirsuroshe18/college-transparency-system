@@ -9,10 +9,8 @@ const ApplicationSchema = new mongoose.Schema({
         required: true
     },
     submittedBy: {
-        // type: mongoose.Schema.Types.ObjectId, 
-        type: String,
-        //ref: "User", 
-        required: true
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: "User", 
     },
     status: {
         type: String,

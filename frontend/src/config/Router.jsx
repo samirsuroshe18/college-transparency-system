@@ -1,6 +1,10 @@
-import { createBrowserRouter, createRoutesFromElements, Route,} from "react-router-dom";
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
+} from "react-router-dom";
 import App from "../App.jsx";
-import Layout from '../components/commonComponents/Layout.jsx';
+import Layout from "../components/commonComponents/Layout.jsx";
 import Home from "../pages/commonPages/Home.jsx";
 import FacilityDashboard from "../pages/FacilityBooking/Dashboard.jsx";
 import LoginPage from "../pages/commonPages/Login.jsx";
@@ -39,25 +43,28 @@ const router = createBrowserRouter(
             <Route path="admin" element={<AdminPanel />} />
           </Route>
 
-
           {/* Student Election Module Routes */}
           <Route path="election" element={<StudentElectionPanel />} />
           <Route path="admin-election" element={<AdminElectionPanel />} />
-          
+
           {/* Pending Request Routes */}
           <Route path="pending-request" element={<PendingProfilesPage />} />
 
           {/* put remaining routes here... */}
-          <Route path="college-dashboard" element={<AdminCollegePanel/>} />
-          <Route path="student-dashboard" element={<StudentDashboard/>} />
-          <Route path="admin-dashboard" element={<StudentDashboard/>} />
-          <Route path="faculty-dashboard" element={<FacultyDashboard/>} />
+          <Route path="college-dashboard" element={<AdminCollegePanel />} />
+          <Route path="student-dashboard" element={<StudentDashboard />} />
+          <Route path="admin-dashboard" element={<StudentDashboard />} />
+          <Route path="faculty-dashboard" element={<FacultyDashboard />} />
 
-          <Route path="wallofshame" element={<StudentShame/>} />
-          <Route path="admin-wallofshame" element={<WallOfShameAdmin/>} />
+          <Route path="wallofshame" element={<StudentShame />} />
+          <Route path="admin-wallofshame" element={<WallOfShameAdmin />} />
 
-          <Route path="complaints" element={<StudentComplaint/>} />
-          <Route path="admin-complaints" element={<AdminComplain/>} />
+          <Route path="complaints" element={<StudentComplaint />} />
+          <Route path="admin-complaints" element={<AdminComplain />} />
+
+          {/* pranay applications routes  */}
+          <Route path="/application-page" element={<ApplicationManagement />} />
+          <Route path="/admin-application" element={<AdminApplication />} />
 
         </Route>
       </Route>
@@ -69,8 +76,6 @@ const router = createBrowserRouter(
       <Route path="/profile-rejected" element={<ProfileRejectedPage />} />
       <Route path="/profile-info" element={<ProfileInfoPage />} />
 
-      <Route path="/application-page" element={<ApplicationManagement />} />
-      <Route path="/admin-application" element={<AdminApplication/>}/>
       <Route path="*" element={<NotFound />} />
     </>
   )

@@ -183,7 +183,7 @@ const StudentProfileFormScreen = () => {
             <div className="flex flex-col items-center gap-6">
               <div className="relative group flex justify-center">
                 <img
-                  src={formData.profilePic}
+                  src={user.profilePic}
                   alt="Profile Preview"
                   className="w-32 h-32 rounded-2xl border-2 border-amber-500/50 object-cover transition-all duration-300 group-hover:border-amber-500"
                 />
@@ -204,7 +204,7 @@ const StudentProfileFormScreen = () => {
                 label="Full Name"
                 type="text"
                 name="name"
-                value={formData.name}
+                value={user.name}
                 readOnly
               />
               <InputField
@@ -212,7 +212,7 @@ const StudentProfileFormScreen = () => {
                 label="Email"
                 type="email"
                 name="email"
-                value={formData.email}
+                value={user.email}
                 readOnly
               />
               <InputField

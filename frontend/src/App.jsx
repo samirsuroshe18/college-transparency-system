@@ -174,6 +174,16 @@ function App() {
       title: 'Events',
       icon: <EventIcon />,
     },
+    {
+      segment: 'application-page',
+      title: 'Applicationuser',
+      icon: <EventIcon />,
+    },
+    {
+      segment: 'admin-application',
+      title: 'ApplicationAdmin',
+      icon: <EventIcon />,
+    },
     ...(userRole === 'admin'
       ? [
         {
