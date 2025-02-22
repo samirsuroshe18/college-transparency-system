@@ -9,7 +9,7 @@ const SelectRoleScreen = () => {
 
   const handleSelectRole = (role) => {
     if (role === 'Student') {
-      navigate('/profile-rejected');
+      navigate('/student-profile');
     } else if (role === 'Faculty') {
       navigate('/faculty-profile');
     }

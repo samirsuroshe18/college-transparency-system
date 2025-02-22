@@ -2,7 +2,6 @@ import Application from "../../models/applicationModel/application.model.js";
 
 // Create Application
 export const createApplication = async (req, res) => {
-    console.log("Request Body:", req.body);
     try {
         const { title, description, category, submittedBy } = req.body;
 

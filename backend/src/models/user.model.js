@@ -1,7 +1,5 @@
 import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
-import e from "express";
 
 const userSchema = new Schema({
     name: {
@@ -34,8 +32,8 @@ const userSchema = new Schema({
     // Fields specific to Students
     studentId: { type: String, unique: true, sparse: true },
     department: { type: String },
-    currentYear: { type: Number },
-    passingYear: { type: Number },
+    currentYear: { type: String },
+    passingYear: { type: String },
     currentSemester: { type: Number },
     classDivision: { type: String },
     rollNumber: { type: String, unique: true },
@@ -50,17 +48,16 @@ const userSchema = new Schema({
     designation: { type: String, enum: ["Professor", "Associate Professor", "Assistant Professor", "Lecturer", "Lab assistant", "Registrar", "Director"] },
     isBoardMember: { type: Boolean },
     joiningDate: { type: Date },
-    qualification: { type: String },
-    subjectsTaught: [{ type: String }],
     officeRoomNumber: { type: String },
     officePhoneNumber: { type: String },
+    qualification: { type: String },
 
     // Common Fields
     address: { type: String },
     emergencyContact: {
         name: { type: String },
         relation: { type: String },
-        contactNo: { type: String }
+        contact: { type: String }
     },
 
     idProof: { type: String },

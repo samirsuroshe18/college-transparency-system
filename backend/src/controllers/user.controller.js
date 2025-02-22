@@ -3,6 +3,7 @@ import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { User } from '../models/user.model.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import mongoose from 'mongoose';
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -69,7 +70,7 @@ const googleLogin = asyncHandler(async (req, res) => {
     }
 
     return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
-        new ApiResponse(200, { isUpdate, accessToken, refreshToken }, "User logged in sucessully")
+        new ApiResponse(200, { existedUser, accessToken, refreshToken }, "User logged in sucessully")
     );
 });
 
@@ -87,7 +88,11 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const addStudentProfile = asyncHandler(async (req, res) => {
-    const { fullName, email, studentId, department, year } = req.body;
+    const {
+        name, email, studentId, department, classDivision, rollNumber,
+        admissionType, admissionDate, currentYear, passingYear, hostelStatus,
+        address, bloodGroup, dateOfBirth, gender, phoneNumber, emergencyContact
+    } = req.body;
 
     const file = req.file.path;
 
@@ -97,22 +102,35 @@ const addStudentProfile = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to upload company logo");
     }
 
+    // Update Student Profile
     const student = await User.findByIdAndUpdate(
         req.user._id,
         {
             $set: {
-                name: fullName,
+                name,
                 email,
                 studentId,
                 department,
-                currentYear:year,
-                idProof: path?.url,
+                classDivision,
+                rollNumber,
+                admissionType,
+                admissionDate,
+                currentYear,
+                passingYear,
+                hostelStatus,
+                address,
+                bloodGroup,
+                dateOfBirth,
+                gender,
+                phoneNumber,
+                emergencyContact: JSON.parse(emergencyContact),
+                idProof: path?.url || "",
                 profileStatus: "Pending",
                 role: "student"
             }
         },
         { new: true }
-    )
+    );
 
     if (!student) {
         throw new ApiError(500, "Something went wrong");
@@ -124,7 +142,7 @@ const addStudentProfile = asyncHandler(async (req, res) => {
 });
 
 const addFacultyProfile = asyncHandler(async (req, res) => {
-    const { fullName, email, employeeId, department, designation } = req.body;
+    const { phoneNumber, joinDate, qualification, emergencyContact, address, department, designation, dateOfBirth, gender, isBoardMember, } = req.body;
 
     const file = req.file.path;
 
@@ -138,12 +156,17 @@ const addFacultyProfile = asyncHandler(async (req, res) => {
         req.user._id,
         {
             $set: {
-                name: fullName,
-                email,
-                employeeId,
+                idProof: path?.url,
+                phoneNumber,
+                dateOfBirth,
+                gender,
+                isBoardMember,
+                joiningDate: joinDate,
+                qualification,
+                emergencyContact: JSON.parse(emergencyContact),
+                address,
                 department,
                 designation,
-                idProof: path?.url,
                 profileStatus: "Pending",
                 role: "faculty"
             }
@@ -162,17 +185,17 @@ const addFacultyProfile = asyncHandler(async (req, res) => {
 
 // Get all pending student profiles
 const getPendingStudentProfiles = asyncHandler(async (req, res) => {
-    const pendingStudents = await User.find({ role: "student", status: "Pending" });
-    
+    const pendingStudents = await User.find({ role: "student", profileStatus: "Pending" });
+
     return res.status(200).json(
-      new ApiResponse(200, pendingStudents, "Facility fetched successfully.")
+        new ApiResponse(200, pendingStudents, "Facility fetched successfully.")
     )
-  });
+});
 
 // Get all rejected student profiles
 const getRejectedStudentProfiles = async (req, res) => {
     try {
-        const rejectedStudents = await User.find({ role: "student", status: "Rejected" });
+        const rejectedStudents = await User.find({ role: "student", profileStatus: "Rejected" });
         res.status(200).json(rejectedStudents);
     } catch (error) {
         res.status(500).json({ message: "Error fetching rejected student profiles", error });
@@ -182,7 +205,7 @@ const getRejectedStudentProfiles = async (req, res) => {
 // Get a specific approved student profile
 const getApproveStudentProfile = async (req, res) => {
     try {
-        const student = await User.findOne({ _id: req.params.userId, role: "student", status: "Approved" });
+        const student = await User.findOne({ _id: req.params.userId, role: "student", profileStatus: "Approved" });
         if (!student) return res.status(404).json({ message: "Student not found or not Approved" });
 
         res.status(200).json(student);
@@ -192,49 +215,56 @@ const getApproveStudentProfile = async (req, res) => {
 };
 
 // Approve a student profile
-const approveStudentProfile = async (req, res) => {
-    try {
-        const updatedStudent = await User.findByIdAndUpdate(req.params.userId, { status: "Approved" }, { new: true });
-        if (!updatedStudent) return res.status(404).json({ message: "Student not found" });
+const approveStudentProfile = asyncHandler(async (req, res) => {
+    const { id } = req.body;
+    const userId = mongoose.Types.ObjectId.createFromHexString(id);
 
-        res.status(200).json({ message: "Student profile approved successfully", user: updatedStudent });
-    } catch (error) {
-        res.status(500).json({ message: "Error approving student profile", error });
+    const updatedStudent = await User.findByIdAndUpdate(
+        userId,
+        { profileStatus: "Approved" },
+        { new: true }
+    );
+
+    if (!updatedStudent) {
+        throw new ApiError(404, "student not found");
     }
-};
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedStudent, "Student profile approved successfully")
+    );
+});
 
 // Reject a student profile
-const rejectStudentProfile = async (req, res) => {
-    const { rejectionReason } = req.body;
+const rejectStudentProfile = asyncHandler(async (req, res) => {
+    const { id, rejectionReason } = req.body;
+    const userId = mongoose.Types.ObjectId.createFromHexString(id);
 
     if (!rejectionReason) {
         return res.status(400).json({ message: "Rejection reason is required" });
     }
 
-    try {
-        const updatedStudent = await User.findByIdAndUpdate(
-            req.params.userId,
-            { status: "Rejected", rejectionReason },
-            { new: true }
-        );
+    const updatedStudent = await User.findByIdAndUpdate(
+        userId,
+        { profileStatus: "Rejected", rejectionReason },
+        { new: true }
+    );
 
-        if (!updatedStudent) return res.status(404).json({ message: "Student not found" });
-
-        res.status(200).json({ message: "Student profile rejected successfully", user: updatedStudent });
-    } catch (error) {
-        res.status(500).json({ message: "Error rejecting student profile", error });
+    if (!updatedStudent) {
+        throw new ApiError(404, "student not found");
     }
-};
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedStudent, "Student profile rejected successfully")
+    );
+});
 
 // Get all pending faculty profiles
-const getPendingFacultyProfiles = async (req, res) => {
-    try {
-        const pendingFaculty = await User.find({ role: "faculty", status: "Pending" });
-        res.status(200).json(pendingFaculty);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching pending faculty profiles", error });
-    }
-};
+const getPendingFacultyProfiles = asyncHandler(async (req, res) => {
+    const pendingFaculty = await User.find({ role: "faculty", profileStatus: "Pending" });
+    return res.status(200).json(
+        new ApiResponse(200, pendingFaculty, "Pending faculty fetched successfully.")
+    )
+});
 
 // Get all rejected faculty profiles
 const getRejectedFacultyProfiles = async (req, res) => {
@@ -259,39 +289,43 @@ const getApproveFacultyProfile = async (req, res) => {
 };
 
 // Approve a faculty profile
-const approveFacultyProfile = async (req, res) => {
-    try {
-        const updatedFaculty = await User.findByIdAndUpdate(req.params.userId, { status: "Approved" }, { new: true });
-        if (!updatedFaculty) return res.status(404).json({ message: "Faculty not found" });
+const approveFacultyProfile = asyncHandler(async (req, res) => {
+    const { id, rejectionReason } = req.body;
+    const userId = mongoose.Types.ObjectId.createFromHexString(id);
 
-        res.status(200).json({ message: "Faculty profile approved successfully", user: updatedFaculty });
-    } catch (error) {
-        res.status(500).json({ message: "Error approving faculty profile", error });
+    const updatedFaculty = await User.findByIdAndUpdate(userId, { profileStatus: "Approved" }, { new: true });
+    if (!updatedFaculty) {
+        throw new ApiError(404, "Faculty not found");
     }
-};
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedFaculty, "Faculty profile approved successfully")
+    );
+});
 
 // Reject a faculty profile
-const rejectFacultyProfile = async (req, res) => {
-    const { rejectionReason } = req.body;
+const rejectFacultyProfile = asyncHandler(async (req, res) => {
+    const { id, rejectionReason } = req.body;
+    const userId = mongoose.Types.ObjectId.createFromHexString(id);
 
     if (!rejectionReason) {
         return res.status(400).json({ message: "Rejection reason is required" });
     }
 
-    try {
-        const updatedFaculty = await User.findByIdAndUpdate(
-            req.params.userId,
-            { status: "Rejected", rejectionReason },
-            { new: true }
-        );
+    const updatedFaculty = await User.findByIdAndUpdate(
+        userId,
+        { profileStatus: "Rejected", rejectionReason },
+        { new: true }
+    );
 
-        if (!updatedFaculty) return res.status(404).json({ message: "Faculty not found" });
-
-        res.status(200).json({ message: "Faculty profile rejected successfully", user: updatedFaculty });
-    } catch (error) {
-        res.status(500).json({ message: "Error rejecting faculty profile", error });
+    if (!updatedFaculty) {
+        throw new ApiError(404, "Faculty not found");
     }
-};
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedFaculty, "Faculty profile rejected successfully")
+    );
+});
 
 
 export {

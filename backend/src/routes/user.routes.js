@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addFacultyProfile, addStudentProfile, getCurrentUser, getPendingStudentProfiles, googleLogin, logoutUser,} from "../controllers/user.controller.js";
+import { addFacultyProfile, addStudentProfile, approveFacultyProfile, approveStudentProfile, getCurrentUser, getPendingFacultyProfiles, getPendingStudentProfiles, googleLogin, logoutUser, rejectFacultyProfile, rejectStudentProfile,} from "../controllers/user.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
@@ -11,5 +11,11 @@ router.route("/logout").get(verifyJwt, logoutUser);
 router.route("/add-student-profile").post(verifyJwt, upload.single("proofImage"), addStudentProfile);
 router.route("/add-faculty-profile").post(verifyJwt, upload.single("proofImage"), addFacultyProfile);
 router.route("/get-pending-students").get(verifyJwt, getPendingStudentProfiles);
+router.route("/get-pending-faculty").get(verifyJwt, getPendingFacultyProfiles);
+router.route("/student-approve").post(verifyJwt, approveStudentProfile);
+router.route("/student-reject").post(verifyJwt, rejectStudentProfile);
+
+router.route("/faculty-approve").post(verifyJwt, approveFacultyProfile);
+router.route("/faculty-reject").post(verifyJwt, rejectFacultyProfile);
 
 export default router;
