@@ -19,7 +19,7 @@ import PendingProfilesPage from "../pages/commonPages/PendingProfilePage.jsx";
 import AdminCollegePanel from "../pages/dashboards/AdminCollegePanel.jsx";
 import StudentDashboard from "../pages/dashboards/StudentDashboard.jsx";
 import FacultyDashboard from "../pages/dashboards/FacultyDashboard.jsx";
-
+import WallOfShameAdmin from "../pages/cheating/WallOfShameAdmin.jsx";
 import StudentShame from "../pages/cheating/StudentShame.jsx";
 import StudentComplaint from "../pages/Complaints/StudentComplaint.jsx";
 import AdminComplain from "../pages/Complaints/AdminComplaint.jsx";
@@ -30,7 +30,6 @@ import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
 import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
 import BookingPage from "../pages/FacilityBooking/BookingPage.jsx";
-import CheatingReports from "../pages/cheating/CheatingReports.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -58,7 +57,7 @@ const router = createBrowserRouter(
           <Route path="faculty-dashboard" element={<FacultyDashboard />} />
 
           <Route path="wallofshame" element={<StudentShame />} />
-          <Route path="admin-wallofshame" element={<CheatingReports />} />
+          <Route path="admin-wallofshame" element={<WallOfShameAdmin />} />
 
           <Route path="complaints" element={<StudentComplaint />} />
           <Route path="admin-complaints" element={<AdminComplain />} />
