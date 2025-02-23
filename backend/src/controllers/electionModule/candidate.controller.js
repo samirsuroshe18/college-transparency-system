@@ -1,5 +1,5 @@
 import Election from "../../models/electionModule/election.model.js";
-import Candidate from "../../models/electionModule/candidate.model.js";
+import Application from "../../models/electionModule/candidateApplication.model.js";
 
 import mongoose from "mongoose";
 
@@ -30,31 +30,46 @@ export const addCandidate = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
-
+ 
 
 // Get all candidates for a specific election
 export const getCandidates = async (req, res) => {
   try {
     const { electionId } = req.params;
-    const candidates = await Candidate.find({ electionId });
+    const electionIdtest= mongoose.Types.ObjectId.createFromHexString(electionId);
+    // Validate electionId
+    if (!electionId) {
+      return res.status(400).json({ error: "Election ID is required" });
+    }
 
-    res.json(candidates);
+    // Fetch candidates by electionId
+    const candidates = await Application.findOne({ electionId: electionIdtest });
+
+    // Check if candidates exist
+    if (!candidates) {
+      return res.status(404).json({ message: "No candidates found for this election" });
+    }
+
+    res.status(200).json(candidates);
   } catch (error) {
+    console.error("Error fetching candidates:", error);
     res.status(500).json({ error: "Failed to fetch candidates" });
   }
 };
 
+
 // Get a specific candidate
 export const getCandidateById = async (req, res) => {
   try {
-    const { candidateId } = req.params;
-    const candidate = await Candidate.findById(candidateId);
+    console.log(req.params)
+    const candidateId = mongoose.Types.ObjectId.createFromHexString(req.params);
+    const candidate = await Application.findById(candidateId);
 
     if (!candidate) return res.status(404).json({ error: "Candidate not found" });
-
-
     res.json(candidate);
   } catch (error) {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+

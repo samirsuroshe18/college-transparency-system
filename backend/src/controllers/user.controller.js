@@ -237,7 +237,8 @@ const approveStudentProfile = asyncHandler(async (req, res) => {
 // Reject a student profile
 const rejectStudentProfile = asyncHandler(async (req, res) => {
     const { id, rejectionReason } = req.body;
-    const userId = mongoose.Types.ObjectId.createFromHexString(id);
+    
+
 
     if (!rejectionReason) {
         return res.status(400).json({ message: "Rejection reason is required" });

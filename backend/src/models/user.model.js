@@ -35,7 +35,7 @@ const userSchema = new Schema({
     passingYear: { type: String },
     currentSemester: { type: Number },
     classDivision: { type: String },
-    rollNumber: { type: String, unique: true },
+    rollNumber: { type: String, unique: true, sparse: true },
     admissionType: { type: String, enum: ["regular", "lateral"]},
     admissionDate: { type: Date },
     hostelStatus: { type: String, enum: ["Hostel", "Day Scholar"] },

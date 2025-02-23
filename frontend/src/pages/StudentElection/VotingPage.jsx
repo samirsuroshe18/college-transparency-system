@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 
-const VotingPage = () => {
+const VotingPage = () => { 
     const { electionId } = useParams();
     const navigate = useNavigate();
     const [candidates, setCandidates] = useState([]);
