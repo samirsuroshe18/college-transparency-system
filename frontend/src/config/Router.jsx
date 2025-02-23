@@ -29,6 +29,8 @@ import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
 import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
 import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
+import BudgetSponsorshipUser from "../pages/BudgetSponsorship/user.jsx";
+import Admin from "../pages/BudgetSponsorship/admin.jsx"
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -65,6 +67,9 @@ const router = createBrowserRouter(
           <Route path="/application-page" element={<ApplicationManagement />} />
           <Route path="/admin-application" element={<AdminApplication />} />
 
+          {/* budget sponsorship routes */}
+          <Route path="/budget-sponsorship-user" element={<BudgetSponsorshipUser />} />
+
         </Route>
       </Route>
       <Route path="/login" element={<LoginPage />} />
@@ -73,7 +78,9 @@ const router = createBrowserRouter(
       <Route path="/faculty-profile" element={<FacultyProfileFormScreen />} />
       <Route path="/profile-pending" element={<ProfilePendingPage />} />
       <Route path="/profile-rejected" element={<ProfileRejectedPage />} />
-      <Route path="/profile-info" element={<ProfileInfoPage />} />
+      <Route path="/adminspon" element={<Admin/>} />
+
+
 
       <Route path="*" element={<NotFound />} />
     </>
