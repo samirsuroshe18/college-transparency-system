@@ -31,7 +31,8 @@ app.use(cookieParser());
 
 //routes import
 import userRouter from "./routes/user.routes.js";
-import complaintRouter from "./routes/complaintModule/complaint.routes.js";
+import complaintRoutes from "./routes/complaintModule/complaint.routes.js";
+
 import facilityRouter from "./routes/facilityBookingModule/facility.routes.js";
 import bookingRouter from "./routes/facilityBookingModule/booking.routes.js";
 import voteRouter from "./routes/electionModule/vote.routes.js";
@@ -42,12 +43,19 @@ import voteRoutes from "./routes/electionModule/vote.routes.js";
 import cheatingRoutes from "./routes/cheatingModule/cheating.routes.js"
 import applicationRoutes from "./routes/applicationModule/application.routes.js";
 import healthleaveRouter from "./routes/healthleave.routes.js";
+import budgetRoutes from "./routes/BudgetSponsoship/budgetRoutes.js"
 
 //routes declaration
 app.use("/api/v1/user", userRouter);
-app.use("/api/v1/complaints", complaintRouter);
+
 app.use("/api/v1/facility", facilityRouter);
 app.use("/api/v1/booking", bookingRouter);
+
+
+app.use("/api/v1/application", applicationRoutes);
+app.use("/api/v1/cheating", cheatingRoutes);
+
+//Routing of election
 app.use("/api/v1/votes", voteRouter);
 app.use("/api/v1/admin/elections", adminElectionRouter);
 app.use("/api/v1/candidates", candidateRouter);
@@ -56,7 +64,13 @@ app.use("/api/v1", voteRoutes);
 app.use("/api/v1/application", applicationRoutes);
 app.use("/api/v1/cheating", cheatingRoutes);
 app.use("/api/v1/healthleave", healthleaveRouter);
+app.use("/api/v1/budgets",budgetRoutes);
+app.use("/api/v1/complaints", complaintRoutes);
 
 app.use(errorHandler);
+
+
+
+
 
 export default app;
