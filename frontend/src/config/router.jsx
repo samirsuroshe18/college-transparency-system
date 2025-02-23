@@ -19,7 +19,7 @@ import PendingProfilesPage from "../pages/commonPages/PendingProfilePage.jsx";
 import AdminCollegePanel from "../pages/dashboards/AdminCollegePanel.jsx";
 import StudentDashboard from "../pages/dashboards/StudentDashboard.jsx";
 import FacultyDashboard from "../pages/dashboards/FacultyDashboard.jsx";
-import WallOfShameAdmin from "../pages/cheating/WallOfShameAdmin.jsx";
+import WallOfShameAdmin from "../pages/cheating/CheatingReports.jsx";
 import StudentShame from "../pages/cheating/StudentShame.jsx";
 import StudentComplaint from "../pages/Complaints/StudentComplaintPage.jsx";
 import AdminComplain from "../pages/Complaints/AdminVotingPanel.jsx";
