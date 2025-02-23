@@ -353,6 +353,26 @@ const getUserById = async (req, res) => {
     }
 }
 
+const getStudentByRollNumber = asyncHandler(async (req, res) => {
+    const { rollNumber } = req.params; // Get roll number from request params
+
+    if (!rollNumber) {
+        throw new ApiError(400, "Roll number is required");
+    }
+
+    const student = await User.findOne({ rollNumber, role: "student" }, "name classDivision currentYear");
+
+    if (!student) {
+        throw new ApiError(404, "Student not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, student, "Student details fetched successfully")
+    );
+});
+
+
+
 export {
     googleLogin,
     logoutUser,
@@ -369,5 +389,7 @@ export {
     getApproveFacultyProfile,
     approveFacultyProfile,
     rejectFacultyProfile,
-    getUserById
+    getUserById,
+    getStudentByRollNumber,
+    
 }

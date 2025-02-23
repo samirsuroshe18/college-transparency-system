@@ -54,6 +54,7 @@ app.use("/api/v1/applications", candidateApplicationRouter);
 app.use("/api/v1", voteRoutes);
 app.use("/api/v1/application", applicationRoutes);
 app.use("/api/v1/cheating", cheatingRoutes);
+
 app.use(errorHandler);
 
 export default app;

@@ -1,24 +1,25 @@
 import express from "express";
 import {
-    addCheatingIncident,  // ✅ Corrected import
+    addCheatingIncident,
     getAllCheatingIncidents,
     getCheatingIncidentById,
     deleteCheatingIncident,
 } from "../../controllers/cheatingModule/cheatingModule.controllers.js";
 
+import { upload } from "../../middlewares/multer.middleware.js";
+import {verifyJwt} from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-// 📋 Report a new cheating incident
-// router.post("/", reportCheating);
+router.post("/add-cheating",verifyJwt, upload.single("proof"), addCheatingIncident);
+router.get("/get-cheating", getAllCheatingIncidents);
 
-// 📄 Get all reported cheating incidents
-router.get("/", getAllCheatingIncidents);
+router.route("/") 
+    .get(getAllCheatingIncidents)
+    .post(addCheatingIncident);
 
-// 🔍 Get a specific cheating incident by ID
-router.get("/:id", getCheatingIncidentById);
-
-// ❌ Delete a cheating incident
-router.delete("/:id", deleteCheatingIncident);
+router.route("/:id")
+    .get(getCheatingIncidentById)
+    .delete(deleteCheatingIncident);
 
 export default router;

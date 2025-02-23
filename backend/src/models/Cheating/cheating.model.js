@@ -1,25 +1,39 @@
 import mongoose from "mongoose";
 
-const cheatingSchema = new mongoose.Schema({
-    student: {
+const CheatingReportSchema = new mongoose.Schema({
+    reportedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User", // Reference to user.model.js
-        required: true,
+        ref: "User",
+    },
+
+    name: {
+        type: String,
+        
+    },
+    
+    rollNo: {
+        type: String,
+        
+    },
+    department: {
+        type: String,
+        enum: ["Computer", "IT", "EXTC", "Civil", "Mechanical"],
+       
+    },
+    class: {
+        type: String,
+        enum: ["FE", "SE", "TE", "BE"],
+        
     },
     reason: {
         type: String,
-        required: true,
+       
     },
     proof: {
-        type: String, // URL for proof (image/video/document)
-        required: true,
+        type: String,
+       
     },
-    reportedAt: {
-        type: Date,
-        default: Date.now,
-    },
-}, { timestamps: true });
+}, {timestamps: true,});
 
-const Cheating = mongoose.model("Cheating", cheatingSchema);
-
-export default Cheating;
+const CheatingReport = mongoose.model("CheatingReport", CheatingReportSchema);
+export default CheatingReport;

@@ -1,48 +1,56 @@
-import Cheating from "../../models/Cheating/cheating.model.js";
-import User from '../../models/user.model.js'; // Corrected import
+import mongoose from "mongoose"; // Import mongoose for ObjectId validation
+import CheatingReport from "../../models/Cheating/cheating.model.js";
+import { uploadOnCloudinary } from "../../utils/cloudinary.js";
 
-// 📋 Add a new cheating incident
 export const addCheatingIncident = async (req, res) => {
     try {
-        const { studentId, reason, proof } = req.body;
+        const { name, rollNo, department, studentClass, reason } = req.body;
+        const proof = req.file; // Assuming proof is uploaded as a file
 
-        // Validate input
-        if (!studentId || !reason || !proof) {
-            return res.status(400).json({ message: "All fields are required (studentId, reason, proof)" });
+        console.log("Received Data:");
+        console.log("Name:", name);
+        console.log("Roll No:", rollNo);
+        console.log("Department:", department);
+        console.log("Class:", studentClass);
+        console.log("Reason:", reason);
+        console.log("Proof:", proof);
+
+        // Validate required fields
+        if (!name || !rollNo || !department || !studentClass || !reason || !proof) {
+            return res.status(400).json({ message: "All fields are required (name, rollNo, department, studentClass, reason, proof)" });
         }
 
-        // Validate student existence
-        const student = await User.findById(studentId);
-        if (!student) {
-            return res.status(404).json({ message: "Student not found" });
+        // Upload proof to Cloudinary and get the URL
+        const file = await uploadOnCloudinary(proof.path);
+        if (file.error) {
+            return res.status(400).json({ message: "Error uploading proof to Cloudinary" });
         }
 
-        // Create new cheating report
-        const cheatingReport = new Cheating({
-            student: studentId,
+        // Create a new cheating report
+        const cheatingReport = await CheatingReport.create({
+            name,
+            rollNo,
+            department,
+            studentClass,
             reason,
-            proof,
+            proof: file.url, // Store Cloudinary file URL
         });
 
-        await cheatingReport.save();
-
-        res.status(201).json({
-            message: "Cheating incident reported successfully",
-            cheatingReport,
+        // Send success response
+        return res.status(201).json({
+            message: "Cheating report submitted successfully!",
+            data: cheatingReport,
         });
+
     } catch (error) {
         console.error("❌ Error adding cheating incident:", error);
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 };
 
-// 📄 Get all cheating incidents with student details
 export const getAllCheatingIncidents = async (req, res) => {
     try {
-        const cheatingReports = await Cheating.find()
-            .populate("student", "name rollNumber classDivision department profilePic") // Updated field names
-            .sort({ reportedAt: -1 }); // Latest first
-
+        const cheatingReports = await CheatingReport.find();
         res.status(200).json(cheatingReports);
     } catch (error) {
         console.error("❌ Error fetching cheating incidents:", error);
@@ -50,50 +58,43 @@ export const getAllCheatingIncidents = async (req, res) => {
     }
 };
 
-// ❌ Delete a cheating incident by ID
-export const deleteCheatingIncident = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        // Validate ID format
-        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-            return res.status(400).json({ message: "Invalid ID format" });
-        }
-
-        const deletedReport = await Cheating.findByIdAndDelete(id);
-
-        if (!deletedReport) {
-            return res.status(404).json({ message: "Cheating incident not found" });
-        }
-
-        res.status(200).json({ message: "Cheating incident deleted successfully" });
-    } catch (error) {
-        console.error("❌ Error deleting cheating incident:", error);
-        res.status(500).json({ message: "Server Error", error: error.message });
-    }
-};
-
-
-// 🔍 Get a single cheating incident by ID
 export const getCheatingIncidentById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Validate ID format
-        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-            return res.status(400).json({ message: "Invalid ID format" });
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid cheating report ID format. Expected a 24-character MongoDB ObjectId." });
         }
 
-        const cheatingReport = await Cheating.findById(id)
-            .populate("student", "name rollNumber classDivision department profilePic");
-
+        const cheatingReport = await Cheating.findById(id).populate("student", "name rollNo department class"); // Populate student details from User model
         if (!cheatingReport) {
-            return res.status(404).json({ message: "Cheating incident not found" });
+            return res.status(404).json({ message: "Cheating report not found" });
         }
 
         res.status(200).json(cheatingReport);
-    } catch (error) {
-        console.error("❌ Error fetching cheating incident:", error);
+    }
+    catch (error) {
+        console.error("❌ Error fetching cheating incident by ID:", error);
         res.status(500).json({ message: "Server Error", error: error.message });
     }
-};
+}
+
+export const deleteCheatingIncident = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid cheating report ID format. Expected a 24-character MongoDB ObjectId." });
+        }
+
+        const cheatingReport = await Cheating.findByIdAndDelete(id);
+        if (!cheatingReport) {
+            return res.status(404).json({ message: "Cheating report not found" });
+        }
+
+        res.status(200).json({ message: "Cheating report deleted successfully" });
+    } catch (error) {
+        console.error("❌ Error deleting cheating incident:", error);
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+}

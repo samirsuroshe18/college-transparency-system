@@ -184,6 +184,11 @@ function App() {
       title: 'ApplicationAdmin',
       icon: <EventIcon />,
     },
+    {
+      segment: 'admin-wallofshame',
+      title: 'Cheating',
+      icon: <EventIcon />,
+    },
     ...(userRole === 'admin'
       ? [
         {
