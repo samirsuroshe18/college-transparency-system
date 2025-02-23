@@ -34,6 +34,8 @@ import Voting from "../pages/StudentElection/VotingPage.jsx"
 
 import BookingPage from "../pages/FacilityBooking/BookingPage.jsx";
 import DashboardLayout from "../pages/FacilityBooking/DashboardLayout.jsx";
+import VotingPage from "../pages/StudentElection/VotingPage.jsx";
+import Announcements from "../pages/commonPages/Announcements.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -48,7 +50,7 @@ const router = createBrowserRouter(
 
           {/* Student Election Module Routes */}
           <Route path="election" element={<StudentElectionPanel />} />
-          <Route path="admin-election" element={<AdminElectionPanel />} />
+          <Route path="voting" element={<VotingPage />} />
 
           {/* Pending Request Routes */}
           <Route path="pending-request" element={<PendingProfilesPage />} />
@@ -64,6 +66,8 @@ const router = createBrowserRouter(
 
           <Route path="complaints" element={<StudentComplaint />} />
           <Route path="admin-complaints" element={<AdminComplain />} />
+
+          <Route path="anouncement" element={<Announcements />} />
 
           {/* pranay applications routes  */}
           <Route path="/application-page" element={<ApplicationManagement />} />
