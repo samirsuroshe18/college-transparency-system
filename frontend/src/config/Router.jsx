@@ -19,9 +19,9 @@ import PendingProfilesPage from "../pages/commonPages/PendingProfilePage.jsx";
 import AdminCollegePanel from "../pages/dashboards/AdminCollegePanel.jsx";
 import StudentDashboard from "../pages/dashboards/StudentDashboard.jsx";
 import FacultyDashboard from "../pages/dashboards/FacultyDashboard.jsx";
-import WallOfShameAdmin from "../pages/cheating/WallOfShameAdmin.jsx";
+import WallOfShameAdmin from "../pages/cheating/CheatingReports.jsx";
 import StudentShame from "../pages/cheating/StudentShame.jsx";
-import StudentComplaint from "../pages/Complaints/StudentComplaintPage.jsx";
+import StudentComplaint from "../pages/Complaints/StudentComplaint.jsx";
 import AdminComplain from "../pages/Complaints/AdminVotingPanel.jsx";
 import ProfilePendingPage from "../pages/commonPages/ProfilePendingPage.jsx";
 import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
@@ -30,19 +30,18 @@ import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
 import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
 import BudgetSponsorshipUser from "../pages/BudgetSponsorship/user.jsx";
-import Admin from "../pages/BudgetSponsorship/admin.jsx"
+import Admin from "../pages/BudgetSponsorship/Admin.jsx"
 
 import Voting from "../pages/StudentElection/VotingPage.jsx"
 
 import BookingPage from "../pages/FacilityBooking/BookingPage.jsx";
 import DashboardLayout from "../pages/FacilityBooking/DashboardLayout.jsx";
-<<<<<<< HEAD
 import HealthConcernForm from "../pages/HealthModule/HealthConcernForm.jsx";
 import DoctorDashboard from "../pages/HealthModule/DoctorDashboard.jsx";
-=======
 import VotingPage from "../pages/StudentElection/VotingPage.jsx";
 import Announcements from "../pages/commonPages/Announcements.jsx";
->>>>>>> 355586499868cc0c0e9eda6de79414f58f338d84
+import StudentComplaintPage from "../pages/Complaints/StudentComplaintPage.jsx";
+import BudgetSponsorshipAdmin from "../pages/BudgetSponsorship/Admin.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -51,8 +50,10 @@ const router = createBrowserRouter(
           <Route path="/" element={<Home />} />
 
           {/* Facility Booking Module Routes */}
-          <Route path="/dashboard" element={<FacilityDashboard />} />
+          <Route path="facility" element={<FacilityDashboard />} >
           <Route path="booking" element={<BookingPage />} />
+          </Route>
+          
           <Route path="admin" element={<AdminPanel />} />
 
           {/* Student Election Module Routes */}
@@ -74,6 +75,9 @@ const router = createBrowserRouter(
           <Route path="complaints" element={<StudentComplaint />} />
           <Route path="admin-complaints" element={<AdminComplain />} />
 
+          <Route path="facility" element={<DashboardLayout />} />
+          <Route path="facility-booking" element={<BookingPage />} />
+
           <Route path="anouncement" element={<Announcements />} />
 
           {/* pranay applications routes  */}
@@ -84,6 +88,7 @@ const router = createBrowserRouter(
           <Route path="/doctor-dash" element={<DoctorDashboard/>} />
           {/* budget sponsorship routes */}
           <Route path="/budget-sponsorship-user" element={<BudgetSponsorshipUser />} />
+          <Route path="/budget-sponsorship-admin" element={<BudgetSponsorshipAdmin />} />
 
         </Route>
       </Route>

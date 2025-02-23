@@ -1,67 +1,80 @@
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Avatar, Chip } from "@mui/material";
-import { amber, red } from "@mui/material/colors";
-import GavelIcon from "@mui/icons-material/Gavel";
-import ReportProblemIcon from "@mui/icons-material/ReportProblem";
-
-const dummyComplaints = [
-  { id: 1, title: "Noise in Library", description: "Too much disturbance.", anonymous: true, votes: 1 },
-  { id: 2, title: "WiFi Issues", description: "Poor connectivity in hostel.", anonymous: false, votes: 0 },
-];
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Card, CardContent } from "../../components/ui/card";
 
 const AdminComplaint = () => {
-  const [complaints, setComplaints] = useState(dummyComplaints);
+  const [complaints, setComplaints] = useState([]);
 
-  const handleVoteReveal = (id) => {
-    setComplaints((prev) =>
-      prev.map((complaint) =>
-        complaint.id === id ? { ...complaint, votes: complaint.votes + 1 } : complaint
-      )
-    );
-  };
+  // Fetch complaints from backend
+  useEffect(() => {
+    const fetchComplaints = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8000/api/v1/complaints/all",
+          { withCredentials: true }
+        );
+        setComplaints(response.data);
+      } catch (error) {
+        console.error("Error fetching complaints:", error);
+      }
+    };
+
+    fetchComplaints();
+  }, []);
 
   return (
-    <div className="bg-[#131314] text-white p-6 rounded-xl shadow-lg">
-      <h2 className="text-2xl font-bold mb-4 text-amber-400">Admin Complaint Management</h2>
-      
-      {/* Complaint List */}
-      {complaints.map((complaint) => (
-        <div key={complaint.id} className="flex items-center bg-[#1E1E1E] p-4 my-2 rounded-lg">
-          <Avatar sx={{ bgcolor: complaint.anonymous ? amber[500] : red[500] }}>
-            {complaint.anonymous ? "A" : "S"}
-          </Avatar>
-          <div className="ml-3 flex-1">
-            <h3 className="font-semibold">{complaint.title}</h3>
-            <p className="text-gray-400">{complaint.description}</p>
-            {complaint.anonymous && (
-              <div className="flex items-center text-red-400 text-sm">
-                <ReportProblemIcon fontSize="small" className="mr-1" />
-                Anonymous Submission
-              </div>
-            )}
-          </div>
+    <div className="container mx-auto p-4">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-6">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+          Complaints Dashboard
+        </h2>
+        <p className="text-gray-600">
+          View and manage all student complaints
+        </p>
+      </div>
 
-          {/* Mark Important */}
-          <Chip
-            label="Important"
-            color="warning"
-            icon={<ReportProblemIcon />}
-            className="mr-2 cursor-pointer"
-          />
-
-          {/* Vote to Reveal */}
-          {complaint.anonymous && (
-            <Button
-              className="bg-red-500 hover:bg-red-600 text-white ml-2"
-              onClick={() => handleVoteReveal(complaint.id)}
-            >
-              <GavelIcon className="mr-1" />
-              Vote to Reveal ({complaint.votes})
-            </Button>
-          )}
-        </div>
-      ))}
+      <div className="space-y-4">
+        {complaints && complaints.length > 0 ? (
+          complaints.map((complaint) => (
+            <Card key={complaint._id} className="mb-4">
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">{complaint.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      {complaint.isAnonymous ? "Anonymous" : complaint.userId} •{" "}
+                      {new Date(complaint.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                      👍 {complaint.likes || 0}
+                    </div>
+                    <div className="text-sm bg-red-100 text-red-800 px-3 py-1 rounded-full">
+                      👎 {complaint.dislikes || 0}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-700">{complaint.description}</p>
+                {complaint.documentUrl && (
+                  <div className="mt-4">
+                    <a
+                      href={complaint.documentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      View Document
+                    </a>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <p className="text-center text-gray-500">No complaints found.</p>
+        )}
+      </div>
     </div>
   );
 };
