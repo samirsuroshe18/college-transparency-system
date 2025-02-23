@@ -171,6 +171,11 @@ function App() {
       title: 'ApplicationAdmin',
       icon: <EventIcon />,
     },
+    {
+      segment: 'budget-sponsorship-user',
+      title: 'Budget Sponsorship',
+      icon: <EventIcon />,
+    },
     ...(userRole === 'admin'
       ? [
         {

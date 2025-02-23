@@ -31,7 +31,8 @@ app.use(cookieParser());
 
 //routes import
 import userRouter from "./routes/user.routes.js";
-import complaintRouter from "./routes/complaintModule/complaint.routes.js";
+import complaintRoutes from "./routes/complaintModule/complaint.routes.js";
+
 import facilityRouter from "./routes/facilityBookingModule/facility.routes.js";
 import bookingRouter from "./routes/facilityBookingModule/booking.routes.js";
 import voteRouter from "./routes/electionModule/vote.routes.js";
@@ -41,10 +42,11 @@ import candidateApplicationRouter from "./routes/electionModule/candidateApplica
 import voteRoutes from "./routes/electionModule/vote.routes.js";
 import cheatingRoutes from "./routes/cheatingModule/cheating.routes.js"
 import applicationRoutes from "./routes/applicationModule/application.routes.js";
+import budgetRoutes from "./routes/BudgetSponsoship/budgetRoutes.js"
 
 //routes declaration
 app.use("/api/v1/user", userRouter);
-app.use("/api/v1/complaints", complaintRouter);
+
 app.use("/api/v1/facility", facilityRouter);
 app.use("/api/v1/booking", bookingRouter);
 app.use("/api/v1/votes", voteRouter);
@@ -54,6 +56,18 @@ app.use("/api/v1/applications", candidateApplicationRouter);
 app.use("/api/v1", voteRoutes);
 app.use("/api/v1/application", applicationRoutes);
 app.use("/api/v1/cheating", cheatingRoutes);
+app.use("/api/v1/budgets",budgetRoutes);
+
+
+app.use(cors({
+    origin: "http://localhost:5173", // Allow frontend
+    credentials: true
+}));
+
+app.use("/api/v1/complaints", complaintRoutes);
+
 app.use(errorHandler);
+app.use(express.json()); // Make sure body parser is applied
+
 
 export default app;
