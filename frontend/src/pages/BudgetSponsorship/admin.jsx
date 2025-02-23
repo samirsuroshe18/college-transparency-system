@@ -32,7 +32,7 @@ const BudgetSponsorshipAdmin = () => {
         ...(approvedAmount && { approvedAmount: Number(approvedAmount) })
       };
 
-      await axios.put(`/api/v1/budgets/${budgetId}/`, payload, {
+      await axios.put(`http://localhost:8000/api/v1/budgets/${budgetId}`, payload, {
         headers: { 'Content-Type': 'application/json' },
         withCredentials: true
       });

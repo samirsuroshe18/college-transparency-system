@@ -6,6 +6,7 @@ import { handleAxiosError } from "../../utils/handleAxiosError";
 import { showNotificationWithTimeout } from "../../redux/slices/notificationSlice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Link, useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(false);
@@ -13,6 +14,7 @@ const Dashboard = () => {
   const [facilities, setFacilities] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -119,9 +121,12 @@ const Dashboard = () => {
             <CardContent>
               <p className="text-gray-600 mb-4">{facility.description}</p>
               <div className="flex items-center gap-4">
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <Link to='booking'>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" >
                   Book Now
                 </button>
+                </Link>
+                
                 <button className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                   View Details
                 </button>

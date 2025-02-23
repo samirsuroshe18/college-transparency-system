@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -16,6 +16,7 @@ import {
 
 const Home = () => {
     const user = useSelector(state => state.auth.userData);
+    const [imgError, setImgError] = useState(false);
 
     const systemFeatures = [
         {
@@ -63,6 +64,36 @@ const Home = () => {
         }
     ];
 
+    const handleImageError = () => {
+        console.log("Image failed to load, falling back to initials");
+        setImgError(true);
+    };
+
+    const ProfileImage = () => {
+        if (!user) return null;
+
+        if (imgError || !user.profilePic) {
+            return (
+                <div className="w-32 h-32 rounded-full bg-blue-400 flex items-center justify-center border-4 border-white shadow-lg">
+                    <span className="text-4xl text-white">
+                        {user.name?.charAt(0)?.toUpperCase()}
+                    </span>
+                </div>
+            );
+        }
+
+        return (
+            <img
+                src={user.profilePic}
+                alt={`${user.name}'s profile`}
+                className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
+                onError={handleImageError}
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
+            />
+        );
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 w-full">
             {/* Hero Section with Profile */}
@@ -75,23 +106,17 @@ const Home = () => {
                         <p className="text-xl opacity-90 max-w-2xl mb-6">
                             Your comprehensive digital solution for streamlined college administration and enhanced academic experience.
                         </p>
+                        {user && (
+                            <div className="text-lg opacity-80">
+                                <p>Department: {user.department}</p>
+                                <p>Year: {user.currentYear}</p>
+                            </div>
+                        )}
                     </div>
                     {user && (
-                        <div className="md:w-1/3 flex justify-center">
+                        <div className="md:w-1/3 flex justify-center mt-6 md:mt-0">
                             <div className="relative">
-                                {user.profilePic ? (
-                                    <img
-                                        src={user.profilePic}
-                                        alt="Profile"
-                                        className="w-32 h-32 rounded-full border-4 border-white shadow-lg"
-                                    />
-                                ) : (
-                                    <div className="w-32 h-32 rounded-full bg-blue-400 flex items-center justify-center border-4 border-white shadow-lg">
-                                        <span className="text-4xl text-white">
-                                            {user.name?.charAt(0)?.toUpperCase()}
-                                        </span>
-                                    </div>
-                                )}
+                                <ProfileImage />
                                 <div className="absolute -bottom-2 right-0 bg-green-500 w-6 h-6 rounded-full border-2 border-white"></div>
                             </div>
                         </div>

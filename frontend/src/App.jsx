@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSelector } from 'react-redux'; // Get role from Redux
+import { useSelector } from 'react-redux';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AnnouncementIcon from '@mui/icons-material/Campaign';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
@@ -9,7 +9,7 @@ import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import EventIcon from '@mui/icons-material/Event';
 import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import { Outlet } from 'react-router';
-import { extendTheme } from '@mui/material/styles'
+import { extendTheme } from '@mui/material/styles';
 import GavelIcon from "@mui/icons-material/Gavel";
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -38,7 +38,8 @@ const demoTheme = extendTheme({
 });
 
 function App() {
-  const userRole = useSelector(state => state.auth.userData);
+  // Add null checking and default value
+  const userRole = useSelector(state => state.auth.userData || { role: 'guest' });
 
   const superAdminNavigation = [
     {
@@ -50,6 +51,31 @@ function App() {
       title: 'Pending Requests',
       icon: <ShoppingCartIcon />,
     },
+    {
+      segment: 'doctor-dash',
+      title: 'Doctor Dashboard',
+      icon: <BarChartIcon />,
+    },
+    {
+      segment: 'admin-wallofshame',
+      title: 'Wall of Shame',
+      icon: <GavelIcon />,
+    },
+    {
+      segment: 'admin-complaints',
+      title: 'Complaint Admin',
+      icon: <ReportProblemIcon />,
+    },
+    {
+      segment: 'admin-application',
+      title: 'Applications Portal',
+      icon: <AssignmentIcon />,
+    },
+    {
+      segment: 'budget-sponsorship-admin',
+      title: 'Budget Sponsorship',
+      icon: <ShoppingCartIcon />,
+    }
   ];
 
   const studentNavigation = [
@@ -69,25 +95,18 @@ function App() {
     },
     {
       segment: 'voting',
-      tile: 'Voting Page',
+      title: 'Voting Page', // Fixed typo: 'tile' -> 'title'
       icon: <HowToVoteIcon />
     },
     {
-      segment: 'health',
+      segment: 'health-form',
       title: 'Health',
       icon: <LayersIcon />,
     },
     {
-      segment: 'doctor-dash',
-      title: 'Doctor Dashboard',
-      icon: <BarChartIcon />,
-
-    },
-    {
-      segment: 'facility',
-      segment: 'dashboard',
-      title: 'Facility Booking',
-      icon: <BusinessCenterIcon />,
+      segment: 'budget-sponsorship-user',
+      title: 'Budget Sponsorship',
+      icon: <ShoppingCartIcon />,
     },
     {
       segment: 'application-page',
@@ -95,107 +114,34 @@ function App() {
       icon: <AssignmentIcon />,
     },
     {
-      segment: 'wallofshame',
-      title: 'Wall of Shame',
-      icon: <GavelIcon />,
-    },
-    {
       segment: 'complaints',
       title: 'Complaint Box',
       icon: <ReportProblemIcon />,
     },
+    {
+      segment: 'facility',
+      title: 'Facility Booking', // Removed duplicate segment
+      icon: <BusinessCenterIcon />,
+    },
   ];
   
+  let nav;
+  switch (userRole.role) {
+    case 'admin':
+      nav = superAdminNavigation;
+      break;
+    case 'student':
+      nav = studentNavigation;
+      break;  
+    default:
+      nav = []; // Empty navigation for guests or unknown roles
+  }
    
-  const NAVIGATION = [
-    ...studentNavigation,
-    // {
-    //   kind: 'header',
-    //   title: 'Student Section',
-    // },
-
-    
-    // {
-    //   segment: 'notices',
-    //   title: 'Announce',
-    //   icon: <AnnouncementIcon />,
-    // },
-    // {
-    //   segment: 'pending-request',
-    //   title: 'Pending Requests',
-    //   icon: <ShoppingCartIcon />,
-    // },
-    // {
-    //   segment: 'college-dashboard',
-    //   title: 'College Dashboard',
-    //   icon: <BusinessCenterIcon />,
-    // },
-    // {
-    //   segment: 'student-dashboard',
-    //   title: 'Student Dashboard',
-    //   icon: <BusinessCenterIcon />,
-    // },
-    // {
-    //   segment: 'admin-dashboard',
-    //   title: 'Admin ',
-    //   icon: <BusinessCenterIcon />,
-    // },
-    // dashboardRoutes,
-    // {
-    //   segment: 'election',
-    //   title: 'Elections',
-    //   icon: <HowToVoteIcon />,
-    // },
-    // {
-    //   segment: 'dashboard',
-    //   title: 'Facilities Booking',
-    //   icon: <BusinessCenterIcon />,
-    // },
-    // {
-    //   segment: 'applications',
-    //   title: 'Applications',
-    //   icon: <AssignmentIcon />,
-    // },
-    // {
-    //   segment: 'wallofshame',
-    //   title: 'Wall of Shame',
-    //   icon: <GavelIcon />,
-    // },
-    // {
-    //   segment: 'admin-wallofshame',
-    //   title: 'Wall of Shame',
-    //   icon: <GavelIcon />,
-    // },
-    // {
-    //   segment: 'complaints',
-    //   title: 'Complaint Box',
-    //   icon: <ReportProblemIcon />,
-    // },
-    // {
-    //   segment: 'admin-complaints',
-    //   title: 'Admin Complaints',
-    //   icon: <ReportProblemIcon />,
-    // },
-    // {
-    //   segment: 'events',
-    //   title: 'Events',
-    //   icon: <EventIcon />,
-    // },
-    // {
-    //   segment: 'application-page',
-    //   title: 'Applicationuser',
-    //   icon: <EventIcon />,
-    // },
-    // {
-    //   segment: 'admin-application',
-    //   title: 'ApplicationAdmin',
-    //   icon: <EventIcon />,
-    // },
-  ];
+  const NAVIGATION = [...nav];
 
   return (
     <ReactRouterAppProvider navigation={NAVIGATION} branding={BRANDING}>
-      <Outlet /> {/* This will render nested routes */}
+      <Outlet />
     </ReactRouterAppProvider>
   );
 }
