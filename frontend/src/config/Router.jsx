@@ -36,13 +36,10 @@ import Voting from "../pages/StudentElection/VotingPage.jsx"
 
 import BookingPage from "../pages/FacilityBooking/BookingPage.jsx";
 import DashboardLayout from "../pages/FacilityBooking/DashboardLayout.jsx";
-<<<<<<< HEAD
 import HealthConcernForm from "../pages/HealthModule/HealthConcernForm.jsx";
 import DoctorDashboard from "../pages/HealthModule/DoctorDashboard.jsx";
-=======
 import VotingPage from "../pages/StudentElection/VotingPage.jsx";
 import Announcements from "../pages/commonPages/Announcements.jsx";
->>>>>>> 355586499868cc0c0e9eda6de79414f58f338d84
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -55,7 +52,8 @@ const router = createBrowserRouter(
           <Route path="booking" element={<BookingPage />} />
           <Route path="admin" element={<AdminPanel />} />
 
-          {/* Student Election Module Routes */}
+          {/* Student Election M
+          dule Routes */}
           <Route path="election" element={<StudentElectionPanel />} />
           <Route path="voting" element={<VotingPage />} />
 
