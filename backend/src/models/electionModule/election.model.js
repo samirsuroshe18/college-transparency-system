@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 
 const ElectionSchema = new mongoose.Schema({
+  applyBy: {type: mongoose.Schema.Types.ObjectId, 
+          ref: "User",},
   title: { type: String, required: true },
   electionDate: { type: Date, required: true },
   applicationDeadline: { type: Date, required: true },

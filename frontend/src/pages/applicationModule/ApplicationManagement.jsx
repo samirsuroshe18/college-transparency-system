@@ -69,12 +69,31 @@ const ApplicationManagement = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage("Submitting...");
+
         try {
-            const response = await axios.post(`${import.meta.env.VITE_DOMAIN}/api/v1/application/create`,
-                newApplication,
+            // Create FormData object for multipart/form-data
+            const formData = new FormData();
+
+            // Append form fields
+            formData.append("title", newApplication.title);
+            formData.append("description", newApplication.description);
+            formData.append("category", newApplication.category);
+            formData.append("submittedBy", newApplication.submittedBy);
+
+            // If you're handling file uploads (e.g., images or documents)
+            if (newApplication.file) {
+                formData.append("file", newApplication.file);
+            }
+
+            // Send POST request with multipart/form-data
+            const response = await axios.post(
+                `${import.meta.env.VITE_DOMAIN}/api/v1/application/create`,
+                formData,
                 {
-                    withCredentials: true, // Ensures cookies and sessions are sent
-                    headers: { "Content-Type": "application/json" }
+                    withCredentials: true, // For cookies and sessions
+                    headers: {
+                        "Content-Type": "multipart/form-data"
+                    }
                 }
             );
 
@@ -82,7 +101,15 @@ const ApplicationManagement = () => {
             setMessage("Application submitted successfully ✅");
             setShowPopup(true);
             setTimeout(() => setShowPopup(false), 3000);
-            setNewApplication({ title: "", description: "", category: "event", submittedBy: "USER_ID_PLACEHOLDER" }); // Reset form
+
+            // Reset form
+            setNewApplication({
+                title: "",
+                description: "",
+                category: "event",
+                submittedBy: "USER_ID_PLACEHOLDER",
+                file: null // Reset file field if applicable
+            });
         } catch (error) {
             console.error("Error submitting application:", error);
             setMessage("Error submitting application ❌");
@@ -90,6 +117,7 @@ const ApplicationManagement = () => {
             setTimeout(() => setShowPopup(false), 3000);
         }
     };
+
 
     // Handle input change
     const handleChange = (e) => {

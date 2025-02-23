@@ -49,6 +49,12 @@ app.use("/api/v1/user", userRouter);
 
 app.use("/api/v1/facility", facilityRouter);
 app.use("/api/v1/booking", bookingRouter);
+
+
+app.use("/api/v1/application", applicationRoutes);
+app.use("/api/v1/cheating", cheatingRoutes);
+
+//Routing of election
 app.use("/api/v1/votes", voteRouter);
 app.use("/api/v1/admin/elections", adminElectionRouter);
 app.use("/api/v1/candidates", candidateRouter);
@@ -68,6 +74,9 @@ app.use("/api/v1/complaints", complaintRoutes);
 
 app.use(errorHandler);
 app.use(express.json()); // Make sure body parser is applied
+
+
+
 
 
 export default app;

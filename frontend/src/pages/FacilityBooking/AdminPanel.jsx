@@ -4,6 +4,7 @@ import { getBookings } from "../../api/facilityBookingApi";
 import { useDispatch } from "react-redux";
 import { showNotificationWithTimeout } from "../../redux/slices/notificationSlice";
 import { handleAxiosError } from "../../utils/handleAxiosError";
+import { Loader2 } from "lucide-react";
 
 const AdminPanel = () => {
     const [bookings, setBookings] = useState([]);
@@ -45,7 +46,7 @@ const AdminPanel = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      setBookings(bookings.map((b) => (b._id === id ? { ...b, status } : b)));
+      setBookings(bookings?.map((b) => (b._id === id ? { ...b, status } : b)));
     };
 
     if (loading) {
@@ -63,7 +64,7 @@ const AdminPanel = () => {
       <div className="p-4">
         <h1 className="text-2xl">Admin Panel</h1>
         <ul>
-          {bookings.map((booking) => (
+          {bookings?.map((booking) => (
             <li key={booking._id} className="p-2 border rounded my-2">
               <p>Facility: {booking.facility.name}</p>
               <p>Date: {booking.date}</p>

@@ -12,4 +12,11 @@ router.post("/vote/:id", voteComplaint);
 
 
 
-export default router;
+
+// Route to submit a complaint
+
+
+// Route to vote for revealing an anonymous complaint
+// router.route("/vote-to-reveal/:complaintId").post(verifyJwt, voteToReveal);
+
+export default router; 

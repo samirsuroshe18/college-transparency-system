@@ -16,53 +16,8 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import LayersIcon from '@mui/icons-material/Layers';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-
-
-const NAVIGATION = [
-  {
-    kind: 'header',
-    title: 'Main items',
-  },
-  {
-    segment: 'election',
-    title: 'Election',
-    icon: <DashboardIcon />,
-  },
-  {
-    segment: 'pending-request',
-    title: 'Pending Requests',
-    icon: <ShoppingCartIcon />,
-  },
-  // {
-  //   kind: 'divider',
-  // },
-  // {
-  //   kind: 'header',
-  //   title: 'Analytics',
-  // },
-  {
-    segment: 'dashboard',
-    title: 'Facility Booking',
-    icon: <BarChartIcon />,
-    children: [
-      {
-        segment: 'facility',
-        title: 'Facilities',
-        icon: <DescriptionIcon />,
-      },
-      {
-        segment: 'admin',
-        title: 'Admin Pannel',
-        icon: <DescriptionIcon />,
-      },
-    ],
-  },
-  {
-    segment: 'pending-request',
-    title: 'Requests',
-    icon: <LayersIcon />,
-  },
-];
+import BookingPage from './pages/FacilityBooking/BookingPage';
+import AdminPanel from './pages/FacilityBooking/AdminPanel';
 
 const BRANDING = {
   title: 'CollegeConnect',
@@ -83,43 +38,29 @@ const demoTheme = extendTheme({
 });
 
 function App() {
-  const userRole = useSelector((state) => state.auth.user?.role); // Fetch user role from Redux
+  const userRole = useSelector(state => state.auth.userData);
 
-  // Define sidebar navigation conditionally
-  const NAVIGATION = [
+  const superAdminNavigation = [
     {
       kind: 'header',
-      title: 'Main Items',
-    },
-    {
-      segment: 'notices',
-      title: 'Announce',
-      icon: <AnnouncementIcon />,
+      title: 'Admin Section',
     },
     {
       segment: 'pending-request',
       title: 'Pending Requests',
       icon: <ShoppingCartIcon />,
     },
+  ];
+
+  const studentNavigation = [
     {
-      segment: 'college-dashboard',
-      title: 'College Dashboard',
-      icon: <BusinessCenterIcon />,
+      kind: 'header',
+      title: 'Student Section',
     },
     {
-      segment: 'student-dashboard',
-      title: 'Student Dashboard',
-      icon: <BusinessCenterIcon />,
-    },
-    {
-      segment: 'admin-dashboard',
-      title: 'Admin ',
-      icon: <BusinessCenterIcon />,
-    },
-    {
-      segment: 'faculty-dashboard',
-      title: 'Faculty Dashboard',
-      icon: <BusinessCenterIcon />,
+      segment: 'anouncement',
+      title: 'Announce',
+      icon: <AnnouncementIcon />,
     },
     {
       segment: 'election',
@@ -127,13 +68,23 @@ function App() {
       icon: <HowToVoteIcon />,
     },
     {
-      segment: 'facility-booking',
-      title: 'Facilities Booking',
+      segment: 'voting',
+      tile: 'Voting Page',
+      icon: <HowToVoteIcon />
+    },
+    {
+      segment: 'health',
+      title: 'Health',
+      icon: <LayersIcon />,
+    },
+    {
+      segment: 'dashboard',
+      title: 'Facility Booking',
       icon: <BusinessCenterIcon />,
     },
     {
-      segment: 'applications',
-      title: 'Applications',
+      segment: 'application-page',
+      title: 'Applications Portal',
       icon: <AssignmentIcon />,
     },
     {
@@ -142,49 +93,97 @@ function App() {
       icon: <GavelIcon />,
     },
     {
-      segment: 'admin-wallofshame',
-      title: 'Wall of Shame',
-      icon: <GavelIcon />,
-    },
-    {
       segment: 'complaints',
       title: 'Complaint Box',
       icon: <ReportProblemIcon />,
     },
-    {
-      segment: 'admin-complaints',
-      title: 'Admin Complaints',
-      icon: <ReportProblemIcon />,
-    },
-    {
-      segment: 'events',
-      title: 'Events',
-      icon: <EventIcon />,
-    },
-    {
-      segment: 'application-page',
-      title: 'Applicationuser',
-      icon: <EventIcon />,
-    },
-    {
-      segment: 'admin-application',
-      title: 'ApplicationAdmin',
-      icon: <EventIcon />,
-    },
-    {
-      segment: 'budget-sponsorship-user',
-      title: 'Budget Sponsorship',
-      icon: <EventIcon />,
-    },
-    ...(userRole === 'admin'
-      ? [
-        {
-          segment: 'config',
-          title: 'Config',
-          icon: <SettingsIcon />,
-        },
-      ]
-      : []),
+  ];
+  
+   
+  const NAVIGATION = [
+    ...studentNavigation,
+    // {
+    //   kind: 'header',
+    //   title: 'Student Section',
+    // },
+
+    
+    // {
+    //   segment: 'notices',
+    //   title: 'Announce',
+    //   icon: <AnnouncementIcon />,
+    // },
+    // {
+    //   segment: 'pending-request',
+    //   title: 'Pending Requests',
+    //   icon: <ShoppingCartIcon />,
+    // },
+    // {
+    //   segment: 'college-dashboard',
+    //   title: 'College Dashboard',
+    //   icon: <BusinessCenterIcon />,
+    // },
+    // {
+    //   segment: 'student-dashboard',
+    //   title: 'Student Dashboard',
+    //   icon: <BusinessCenterIcon />,
+    // },
+    // {
+    //   segment: 'admin-dashboard',
+    //   title: 'Admin ',
+    //   icon: <BusinessCenterIcon />,
+    // },
+    // dashboardRoutes,
+    // {
+    //   segment: 'election',
+    //   title: 'Elections',
+    //   icon: <HowToVoteIcon />,
+    // },
+    // {
+    //   segment: 'dashboard',
+    //   title: 'Facilities Booking',
+    //   icon: <BusinessCenterIcon />,
+    // },
+    // {
+    //   segment: 'applications',
+    //   title: 'Applications',
+    //   icon: <AssignmentIcon />,
+    // },
+    // {
+    //   segment: 'wallofshame',
+    //   title: 'Wall of Shame',
+    //   icon: <GavelIcon />,
+    // },
+    // {
+    //   segment: 'admin-wallofshame',
+    //   title: 'Wall of Shame',
+    //   icon: <GavelIcon />,
+    // },
+    // {
+    //   segment: 'complaints',
+    //   title: 'Complaint Box',
+    //   icon: <ReportProblemIcon />,
+    // },
+    // {
+    //   segment: 'admin-complaints',
+    //   title: 'Admin Complaints',
+    //   icon: <ReportProblemIcon />,
+    // },
+    // {
+    //   segment: 'events',
+    //   title: 'Events',
+    //   icon: <EventIcon />,
+    // },
+    // {
+    //   segment: 'application-page',
+    //   title: 'Applicationuser',
+    //   icon: <EventIcon />,
+    // },
+    // {
+    //   segment: 'admin-application',
+    //   title: 'ApplicationAdmin',
+    //   icon: <EventIcon />,
+    // },
   ];
 
   return (

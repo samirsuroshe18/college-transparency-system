@@ -1,23 +1,13 @@
-import express from "express";
-import { createElection, getElections, endElection } from "../../controllers/electionModule/election.controller.js";
-import { getLiveElections } from "../../controllers/electionModule/election.controller.js";
-import Election from "../../models/electionModule/election.model.js";
+import { Router } from "express";
+import { getElections, endElection, createElectionAdmin, upcomingElection, getLiveElections, getCompletedElections } from "../../controllers/electionModule/election.controller.js";
 
-const router = express.Router();
+const router = Router();
 
-router.post("/create", createElection);
+router.post("/create", createElectionAdmin);
+router.get("/get", getElections);
 router.get("/live", getLiveElections);
 router.put("/end/:id", endElection);
-
-// ✅ Fetch upcoming elections properly
-router.get("/upcoming", async (req, res) => {
-    try {
-      const elections = await Election.find(); // ✅ Ensure this works
-      res.json(elections);
-    } catch (error) {
-      console.error("Error fetching elections:", error); // ✅ Log error
-      res.status(500).json({ message: "Server Error" });
-    }
-});
+router.get("/upcoming", upcomingElection);
+router.get("/completed", getCompletedElections);
 
 export default router;

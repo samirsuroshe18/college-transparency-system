@@ -10,9 +10,9 @@ const SimpleFacultyForm = () => {
   const user = useSelector((state) => state.auth.userData);
 
   const [formData, setFormData] = useState({
-    profilePic: user.profilePic || "",
-    fullName: user.name || "",
-    email: user.email || "",
+    profilePic: user?.profilePic || "",
+    fullName: user?.name || "",
+    email: user?.email || "",
     phoneNumber: "",
     gender: "",
     dateOfBirth: "",
@@ -229,6 +229,7 @@ const SimpleFacultyForm = () => {
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none text-gray-700"
                 >
                   <option value="">Select Designation</option>
+                  <option value="hod">HOD</option>
                   <option value="professor">Professor</option>
                   <option value="associate-professor">
                     Associate Professor
@@ -237,7 +238,8 @@ const SimpleFacultyForm = () => {
                     Assistant Professor
                   </option>
                   <option value="lecturer">Lecturer</option>
-                  <option value="visiting-faculty">Visiting Faculty</option>
+                  <option value="nonteaching">Non-Teaching staff</option>
+                  <option value="guard">Guard</option>
                 </select>
               </div>
 

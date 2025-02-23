@@ -21,8 +21,8 @@ import StudentDashboard from "../pages/dashboards/StudentDashboard.jsx";
 import FacultyDashboard from "../pages/dashboards/FacultyDashboard.jsx";
 import WallOfShameAdmin from "../pages/cheating/WallOfShameAdmin.jsx";
 import StudentShame from "../pages/cheating/StudentShame.jsx";
-import StudentComplaint from "../pages/Complaints/StudentComplaint.jsx";
-import AdminComplain from "../pages/Complaints/AdminComplaint.jsx";
+import StudentComplaint from "../pages/Complaints/StudentComplaintPage.jsx";
+import AdminComplain from "../pages/Complaints/AdminVotingPanel.jsx";
 import ProfilePendingPage from "../pages/commonPages/ProfilePendingPage.jsx";
 import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
 
@@ -31,6 +31,13 @@ import ApplicationManagement from "../pages/applicationModule/ApplicationManagem
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
 import BudgetSponsorshipUser from "../pages/BudgetSponsorship/user.jsx";
 import Admin from "../pages/BudgetSponsorship/admin.jsx"
+
+import Voting from "../pages/StudentElection/VotingPage.jsx"
+
+import BookingPage from "../pages/FacilityBooking/BookingPage.jsx";
+import DashboardLayout from "../pages/FacilityBooking/DashboardLayout.jsx";
+import VotingPage from "../pages/StudentElection/VotingPage.jsx";
+import Announcements from "../pages/commonPages/Announcements.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -39,14 +46,13 @@ const router = createBrowserRouter(
           <Route path="/" element={<Home />} />
 
           {/* Facility Booking Module Routes */}
-          <Route path="dashboard" element={<FacilityDashboard />}>
-            <Route path="facility" element={<FacilityDashboard />} />
-            <Route path="admin" element={<AdminPanel />} />
-          </Route>
+          <Route path="/dashboard" element={<FacilityDashboard />} />
+          <Route path="booking" element={<BookingPage />} />
+          <Route path="admin" element={<AdminPanel />} />
 
           {/* Student Election Module Routes */}
           <Route path="election" element={<StudentElectionPanel />} />
-          <Route path="admin-election" element={<AdminElectionPanel />} />
+          <Route path="voting" element={<VotingPage />} />
 
           {/* Pending Request Routes */}
           <Route path="pending-request" element={<PendingProfilesPage />} />
@@ -62,6 +68,8 @@ const router = createBrowserRouter(
 
           <Route path="complaints" element={<StudentComplaint />} />
           <Route path="admin-complaints" element={<AdminComplain />} />
+
+          <Route path="anouncement" element={<Announcements />} />
 
           {/* pranay applications routes  */}
           <Route path="/application-page" element={<ApplicationManagement />} />
@@ -81,10 +89,12 @@ const router = createBrowserRouter(
       <Route path="/adminspon" element={<Admin/>} />
 
 
+      <Route path="/profile-info" element={<ProfileInfoPage />} />
+      <Route path="/Voting" element={<Voting/>} />
 
       <Route path="*" element={<NotFound />} />
     </>
-  )
+   )
 );
 
 export default router;
