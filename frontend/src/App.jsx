@@ -58,7 +58,7 @@ function App() {
       title: 'Student Section',
     },
     {
-      segment: 'notices',
+      segment: 'anouncement',
       title: 'Announce',
       icon: <AnnouncementIcon />,
     },
@@ -68,12 +68,17 @@ function App() {
       icon: <HowToVoteIcon />,
     },
     {
+      segment: 'voting',
+      tile: 'Voting Page',
+      icon: <HowToVoteIcon />
+    },
+    {
       segment: 'health',
       title: 'Health',
       icon: <LayersIcon />,
     },
     {
-      segment: 'facility',
+      segment: 'dashboard',
       title: 'Facility Booking',
       icon: <BusinessCenterIcon />,
     },
@@ -101,6 +106,8 @@ function App() {
     //   kind: 'header',
     //   title: 'Student Section',
     // },
+
+    
     // {
     //   segment: 'notices',
     //   title: 'Announce',

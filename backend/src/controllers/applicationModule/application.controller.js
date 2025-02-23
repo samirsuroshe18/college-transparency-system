@@ -1,6 +1,6 @@
 import Application from "../../models/applicationModel/application.model.js";
 import  sendEmail  from "../../utils/nodemailer.js"; // ✅ Use import instead of require
-
+import { uploadOnCloudinary } from '../../utils/cloudinary.js';
 
 
 // Create Application
@@ -8,11 +8,26 @@ export const createApplication = async (req, res) => {
     try {
         const { title, description, category } = req.body;
 
-        if (!title || !description || !category ) {
+        if (!title || !description || !category) {
             return res.status(400).json({ message: "All fields are required" });
         }
-        // TODO: convert string to moongose object id and then place in the submitttedBy
-        const newApplication = new Application({ title, description, category, submittedBy:req.user._id }); //submiitedBY:
+
+        let fileUrl = null;
+
+        // Check if file exists
+        if (req.file) {
+            const path = await uploadOnCloudinary(req.file.buffer); // Using buffer with memoryStorage
+            fileUrl = path?.secure_url; // Assuming Cloudinary returns secure_url
+        }
+
+        const newApplication = new Application({
+            title,
+            description,
+            category,
+            submittedBy: req.user._id, // Ensure user is authenticated
+            fileUrl // Store the file URL if uploaded
+        });
+
         await newApplication.save();
 
         res.status(201).json({

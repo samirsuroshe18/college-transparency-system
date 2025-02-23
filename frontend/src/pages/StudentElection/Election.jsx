@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
+import axios from 'axios'
 
 const StudentElectionPanel = () => {
   const { userData } = useSelector((state) => state.auth);
@@ -21,22 +22,37 @@ const StudentElectionPanel = () => {
 
   useEffect(() => {
     fetchElections();
-    fetchUserApplications();
   }, []);
 
   const fetchElections = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/upcoming`);
-      const data = await response.json();
+      const response = await axios.get(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/get`);
       const today = new Date();
       const upcoming = [], live = [], completed = [];
 
-      data.forEach((election) => {
-        const startDate = new Date(election.startDate);
-        const endDate = new Date(election.endDate);
-        if (endDate < today) completed.push(election);
-        else if (startDate <= today && endDate >= today) live.push(election);
-        else upcoming.push(election);
+      response.data.forEach((election) => {
+        const electionDate = new Date(election.electionDate);
+        const applicationDeadline = new Date(election.applicationDeadline);
+
+        if (isNaN(electionDate) || isNaN(applicationDeadline)) {
+          console.warn(`Invalid date found in election: ${election.title}`);
+          return;
+        }
+
+        console.log("todays Date", today)
+        console.log("electionDate Date", electionDate)
+        console.log("electionDate Date", applicationDeadline)
+        console.log(today >= electionDate && today <= applicationDeadline)
+
+        if (election.ended) {
+          completed.push(election);
+        } else if (today >= electionDate && today <= applicationDeadline) {
+          live.push(election);
+        } else if (today < electionDate) {
+          upcoming.push(election);
+        } else if (today > applicationDeadline) {
+          completed.push(election);
+        }
       });
 
       setElections(upcoming);
@@ -44,17 +60,6 @@ const StudentElectionPanel = () => {
       setCompletedElections(completed);
     } catch (error) {
       console.error("Error fetching elections:", error);
-    }
-  };
-  const fetchUserApplications = async () => {
-    if (!userData?._id) return;
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/applications/user/${userData?._id}`);
-      const data = await response.json();
-      setUserApplications(data || []);
-    } catch (error) {
-      console.error("Error fetching user applications:", error);
     }
   };
 
@@ -86,18 +91,21 @@ const StudentElectionPanel = () => {
       if (!response.ok) throw new Error(result.message || "Failed to submit application");
 
       setIsApplying(false);
-      fetchUserApplications();
     } catch (error) {
       console.error("Error submitting application:", error.message);
     }
   };
 
   const formatDate = (dateString) => {
-    return new Intl.DateTimeFormat("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }).format(new Date(dateString));
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   return (
@@ -115,7 +123,7 @@ const StudentElectionPanel = () => {
             <Card className="shadow-lg">
               <CardContent>
                 <h2 className="text-xl font-semibold text-blue-500">{election.title}</h2>
-                <p className="text-gray-600">Applications close: {formatDate(election.applicationDeadline)}</p>
+                <p className="text-gray-600">Applications close: {election.applicationDeadline ? formatDate(election.applicationDeadline) : 'Date not available'}</p>
                 <Button onClick={() => handleApplyClick(election._id)} className="mt-4 bg-blue-500 text-white">
                   Apply Now
                 </Button>
@@ -129,8 +137,8 @@ const StudentElectionPanel = () => {
             <Card className="shadow-lg">
               <CardContent>
                 <h2 className="text-xl font-semibold text-green-500">{election.title}</h2>
-                <p className="text-gray-600">Voting ends: {formatDate(election.endDate)}</p>
-                {election.candidates.map((candidate) => (
+                <p className="text-gray-600">Voting ends: {election.electionDate ? formatDate(election.electionDate) : 'Date not available'}</p>
+                {(election.candidates || []).map((candidate) => (
                   <div key={candidate._id} className="mt-4">
                     <div className="flex justify-between items-center">
                       <span>{candidate.name}</span>
@@ -149,8 +157,8 @@ const StudentElectionPanel = () => {
             <Card className="shadow-lg">
               <CardContent>
                 <h2 className="text-xl font-semibold text-gray-700">{election.title}</h2>
-                <p className="text-gray-600">Completed on: {formatDate(election.endDate)}</p>
-                {election.candidates.map((candidate) => (
+                <p className="text-gray-600">Completed on: {election.electionDate ? formatDate(election.electionDate) : 'Date not available'}</p>
+                {(election.candidates || []).map((candidate) => (
                   <div key={candidate._id} className="mt-4">
                     <div className="flex justify-between items-center">
                       <span>{candidate.name}</span>
