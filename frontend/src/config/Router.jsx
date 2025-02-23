@@ -31,6 +31,8 @@ import ApplicationManagement from "../pages/applicationModule/ApplicationManagem
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
 import BookingPage from "../pages/FacilityBooking/BookingPage.jsx";
 import DashboardLayout from "../pages/FacilityBooking/DashboardLayout.jsx";
+import HealthConcernForm from "../pages/HealthModule/HealthConcernForm.jsx";
+import DoctorDashboard from "../pages/HealthModule/DoctorDashboard.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -65,6 +67,10 @@ const router = createBrowserRouter(
           {/* pranay applications routes  */}
           <Route path="/application-page" element={<ApplicationManagement />} />
           <Route path="/admin-application" element={<AdminApplication />} />
+
+          <Route path="/health-form" element={<HealthConcernForm />} />
+          <Route path="/doctor-dash" element={<DoctorDashboard/>} />
+
         </Route>
       </Route>
       <Route path="/login" element={<LoginPage />} />
@@ -74,6 +80,7 @@ const router = createBrowserRouter(
       <Route path="/profile-pending" element={<ProfilePendingPage />} />
       <Route path="/profile-rejected" element={<ProfileRejectedPage />} />
       <Route path="/profile-info" element={<ProfileInfoPage />} />
+      
 
       <Route path="*" element={<NotFound />} />
     </>

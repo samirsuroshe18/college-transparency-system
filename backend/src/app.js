@@ -41,6 +41,7 @@ import candidateApplicationRouter from "./routes/electionModule/candidateApplica
 import voteRoutes from "./routes/electionModule/vote.routes.js";
 import cheatingRoutes from "./routes/cheatingModule/cheating.routes.js"
 import applicationRoutes from "./routes/applicationModule/application.routes.js";
+import healthleaveRouter from "./routes/healthleave.routes.js";
 
 //routes declaration
 app.use("/api/v1/user", userRouter);
@@ -54,6 +55,8 @@ app.use("/api/v1/applications", candidateApplicationRouter);
 app.use("/api/v1", voteRoutes);
 app.use("/api/v1/application", applicationRoutes);
 app.use("/api/v1/cheating", cheatingRoutes);
+app.use("/api/v1/healthleave", healthleaveRouter);
+
 app.use(errorHandler);
 
 export default app;

@@ -68,9 +68,15 @@ function App() {
       icon: <HowToVoteIcon />,
     },
     {
-      segment: 'health',
+      segment: 'health-form',
       title: 'Health',
       icon: <LayersIcon />,
+    },
+    {
+      segment: 'doctor-dash',
+      title: 'Doctor Dashboard',
+      icon: <BarChartIcon />,
+
     },
     {
       segment: 'facility',
