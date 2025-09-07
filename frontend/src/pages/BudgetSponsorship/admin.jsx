@@ -13,7 +13,7 @@ const BudgetSponsorshipAdmin = () => {
   const fetchBudgets = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:8000/api/v1/budgets/", {
+      const response = await axios.get(`${import.meta.env.VITE_DOMAIN}/api/v1/budgets/`, {
         withCredentials: true
       });
       setBudgets(Array.isArray(response.data) ? response.data : []);
@@ -32,7 +32,7 @@ const BudgetSponsorshipAdmin = () => {
         ...(approvedAmount && { approvedAmount: Number(approvedAmount) })
       };
 
-      await axios.put(`http://localhost:8000/api/v1/budgets/${budgetId}`, payload, {
+      await axios.put(`${import.meta.env.VITE_DOMAIN}/api/v1/budgets/${budgetId}`, payload, {
         headers: { 'Content-Type': 'application/json' },
         withCredentials: true
       });

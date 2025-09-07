@@ -18,7 +18,7 @@ const VotingPage = () => {
     // ✅ Fetch Candidates API Call
     const fetchCandidates = async () => {
         try {
-            const res = await axios.get(`http://localhost:8000/api/v1/admin/elections/live`, { withCredentials: true });
+            const res = await axios.get(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/live`, { withCredentials: true });
             const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/upcoming`);
             console.log(response);
             console.log(res);

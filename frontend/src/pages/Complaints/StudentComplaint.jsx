@@ -24,7 +24,7 @@ const StudentComplaint = () => {
     const fetchComplaints = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:8000/api/v1/complaints/all"
+          `${import.meta.env.VITE_DOMAIN}/api/v1/complaints/all`
         );
         setComplaints(response.data);
       } catch (error) {
@@ -40,7 +40,7 @@ const StudentComplaint = () => {
   const handleVote = async (complaintId, voteType) => {
     try {
         const response = await axios.post(
-            `http://localhost:8000/api/v1/complaints/vote/${complaintId}`,
+            `${import.meta.env.VITE_DOMAIN}/api/v1/complaints/vote/${complaintId}`,
             { voteType, userId: currentUser.id },
             { withCredentials: true }
         );
@@ -82,7 +82,7 @@ const StudentComplaint = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:8000/api/v1/complaints/submit",
+        `${import.meta.env.VITE_DOMAIN}/api/v1/complaints/submit`,
         formData,
         {
           headers: {

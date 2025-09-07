@@ -135,7 +135,7 @@ const HealthConcernForm = () => {
       console.log("Final FormData:", formData);
       
       const response = await axios.post(
-        `http://localhost:8000/api/v1/healthleave/health/create`,
+        `${import.meta.env.VITE_DOMAIN}/api/v1/healthleave/health/create`,
         form,
         {
           headers: {

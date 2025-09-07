@@ -10,7 +10,7 @@ const AdminComplaint = () => {
     const fetchComplaints = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:8000/api/v1/complaints/all",
+          `${import.meta.env.VITE_DOMAIN}/api/v1/complaints/all`,
           { withCredentials: true }
         );
         setComplaints(response.data);

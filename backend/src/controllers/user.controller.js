@@ -50,10 +50,11 @@ const googleLogin = catchAsync(async (req, res) => {
 
         //option object is created beacause we dont want to modified the cookie to front side
         const option = {
-            httpOnly: 'true' === process.env.HTTP_ONLY,
-            secure: 'true' === process.env.COOKIE_SECURE,
-            maxAge: Number(process.env.COOKIE_MAX_AGE),
-        }
+            httpOnly: process.env.HTTP_ONLY === 'true',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: isRemember ? Number(process.env.COOKIE_MAX_AGE) : undefined,
+            sameSite: process.env.SAME_SITE === 'true' ? 'Strict' : 'Lax',
+        };
 
         return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
             new ApiResponse(200, { loggedInUser, accessToken, refreshToken }, "User logged in sucessully")
@@ -64,10 +65,11 @@ const googleLogin = catchAsync(async (req, res) => {
 
     //option object is created beacause we dont want to modified the cookie to front side
     const option = {
-        httpOnly: 'true' === process.env.HTTP_ONLY,
-        secure: 'true' === process.env.COOKIE_SECURE,
-        maxAge: Number(process.env.COOKIE_MAX_AGE),
-    }
+        httpOnly: process.env.HTTP_ONLY === 'true',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: isRemember ? Number(process.env.COOKIE_MAX_AGE) : undefined,
+        sameSite: process.env.SAME_SITE === 'true' ? 'Strict' : 'Lax',
+    };
 
     return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
         new ApiResponse(200, { existedUser, accessToken, refreshToken }, "User logged in sucessully")
@@ -237,7 +239,7 @@ const approveStudentProfile = catchAsync(async (req, res) => {
 // Reject a student profile
 const rejectStudentProfile = catchAsync(async (req, res) => {
     const { id, rejectionReason } = req.body;
-    
+
 
 
     if (!rejectionReason) {
@@ -331,9 +333,9 @@ const rejectFacultyProfile = catchAsync(async (req, res) => {
 const getUserById = async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         const user = await User.findById(id).select("-password");
-        
+
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -392,5 +394,5 @@ export {
     rejectFacultyProfile,
     getUserById,
     getStudentByRollNumber,
-    
+
 }

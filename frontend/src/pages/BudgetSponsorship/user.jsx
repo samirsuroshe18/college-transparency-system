@@ -29,7 +29,7 @@ const BudgetSponsorshipUser = () => {
   const fetchBudgets = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:8000/api/v1/budgets",{withCredentials: true});
+      const response = await axios.get(`${import.meta.env.VITE_DOMAIN}/api/v1/budgets`,{withCredentials: true});
       setBudgets(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Failed to fetch budgets:", error);
@@ -61,7 +61,7 @@ const BudgetSponsorshipUser = () => {
       console.log("Sending payload:", payload);
 
       // Updated endpoint
-      const response = await axios.post("http://localhost:8000/api/v1/budgets/submit", payload, {
+      const response = await axios.post(`${import.meta.env.VITE_DOMAIN}/api/v1/budgets/submit`, payload, {
         headers: {
           'Content-Type': 'application/json'
         },
