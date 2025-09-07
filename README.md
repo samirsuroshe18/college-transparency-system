@@ -1,1 +1,0 @@
-Automated Transparent College System
