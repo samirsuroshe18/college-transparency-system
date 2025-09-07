@@ -1,1 +1,1 @@
-W
+Automated Transparent College System
