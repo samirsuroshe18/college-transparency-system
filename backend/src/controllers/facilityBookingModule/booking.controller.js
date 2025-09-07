@@ -1,9 +1,9 @@
-import asyncHandler from '../../utils/asyncHandler.js';
+import catchAsync from '../../utils/catchAsync.js';
 import ApiError from '../../utils/ApiError.js';
 import ApiResponse from '../../utils/ApiResponse.js';
 import { Booking } from '../../models/facilityBookingModule/booking.model.js';
 
-const createBooking = asyncHandler(async (req, res) => {
+const createBooking = catchAsync(async (req, res) => {
 
   const loggedInUser = await User.create({
     name, 
@@ -24,12 +24,12 @@ if (!loggedInUser) {
     )
 });
 
-const getBookings = asyncHandler(async (req, res) => {
+const getBookings = catchAsync(async (req, res) => {
     const bookings = await Booking.find().populate("facility user approvedBy");
     res.json(bookings);
 });
 
-const updateBookingStatus = asyncHandler(async (req, res) => {
+const updateBookingStatus = catchAsync(async (req, res) => {
     const { status, approvedBy } = req.body;
     const booking = await Booking.findByIdAndUpdate(
       req.params.id,

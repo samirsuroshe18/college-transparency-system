@@ -1,4 +1,4 @@
-import asyncHandler from '../utils/asyncHandler.js'; 
+import catchAsync from '../utils/catchAsync.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { User } from '../models/user.model.js';
@@ -22,7 +22,7 @@ const generateAccessAndRefreshToken = async (userId) => {
     }
 };
 
-const googleLogin = asyncHandler(async (req, res) => {
+const googleLogin = catchAsync(async (req, res) => {
     const { name, email, profilePic } = req.body;
 
     if (!name || !email || !profilePic) {
@@ -74,20 +74,20 @@ const googleLogin = asyncHandler(async (req, res) => {
     );
 });
 
-const logoutUser = asyncHandler(async (req, res) => {
+const logoutUser = catchAsync(async (req, res) => {
 
     return res.status(200).clearCookie('accessToken').status(200).json(
         new ApiResponse(200, req.user, "User logged out successfully")
     );
 });
 
-const getCurrentUser = asyncHandler(async (req, res) => {
+const getCurrentUser = catchAsync(async (req, res) => {
     return res.status(200).json(
         new ApiResponse(200, req.user, "User session is Active")
     );
 });
 
-const addStudentProfile = asyncHandler(async (req, res) => {
+const addStudentProfile = catchAsync(async (req, res) => {
     const {
         name, email, studentId, department, classDivision, rollNumber,
         admissionType, admissionDate, currentYear, passingYear, hostelStatus,
@@ -141,7 +141,7 @@ const addStudentProfile = asyncHandler(async (req, res) => {
     );
 });
 
-const addFacultyProfile = asyncHandler(async (req, res) => {
+const addFacultyProfile = catchAsync(async (req, res) => {
     const { phoneNumber, joinDate, qualification, emergencyContact, address, department, designation, dateOfBirth, gender, isBoardMember, } = req.body;
 
     const file = req.file.path;
@@ -184,7 +184,7 @@ const addFacultyProfile = asyncHandler(async (req, res) => {
 });
 
 // Get all pending student profiles
-const getPendingStudentProfiles = asyncHandler(async (req, res) => {
+const getPendingStudentProfiles = catchAsync(async (req, res) => {
     const pendingStudents = await User.find({ role: "student", profileStatus: "Pending" });
 
     return res.status(200).json(
@@ -215,7 +215,7 @@ const getApproveStudentProfile = async (req, res) => {
 };
 
 // Approve a student profile
-const approveStudentProfile = asyncHandler(async (req, res) => {
+const approveStudentProfile = catchAsync(async (req, res) => {
     const { id } = req.body;
     const userId = mongoose.Types.ObjectId.createFromHexString(id);
 
@@ -235,7 +235,7 @@ const approveStudentProfile = asyncHandler(async (req, res) => {
 });
 
 // Reject a student profile
-const rejectStudentProfile = asyncHandler(async (req, res) => {
+const rejectStudentProfile = catchAsync(async (req, res) => {
     const { id, rejectionReason } = req.body;
     
 
@@ -260,7 +260,7 @@ const rejectStudentProfile = asyncHandler(async (req, res) => {
 });
 
 // Get all pending faculty profiles
-const getPendingFacultyProfiles = asyncHandler(async (req, res) => {
+const getPendingFacultyProfiles = catchAsync(async (req, res) => {
     const pendingFaculty = await User.find({ role: "faculty", profileStatus: "Pending" });
     return res.status(200).json(
         new ApiResponse(200, pendingFaculty, "Pending faculty fetched successfully.")
@@ -290,7 +290,7 @@ const getApproveFacultyProfile = async (req, res) => {
 };
 
 // Approve a faculty profile
-const approveFacultyProfile = asyncHandler(async (req, res) => {
+const approveFacultyProfile = catchAsync(async (req, res) => {
     const { id, rejectionReason } = req.body;
     const userId = mongoose.Types.ObjectId.createFromHexString(id);
 
@@ -305,7 +305,7 @@ const approveFacultyProfile = asyncHandler(async (req, res) => {
 });
 
 // Reject a faculty profile
-const rejectFacultyProfile = asyncHandler(async (req, res) => {
+const rejectFacultyProfile = catchAsync(async (req, res) => {
     const { id, rejectionReason } = req.body;
     const userId = mongoose.Types.ObjectId.createFromHexString(id);
 
@@ -354,7 +354,7 @@ const getUserById = async (req, res) => {
     }
 }
 
-const getStudentByRollNumber = asyncHandler(async (req, res) => {
+const getStudentByRollNumber = catchAsync(async (req, res) => {
     const { rollNumber } = req.params; // Get roll number from request params
 
     if (!rollNumber) {

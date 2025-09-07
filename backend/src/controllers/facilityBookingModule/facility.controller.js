@@ -1,9 +1,9 @@
-import asyncHandler from '../../utils/asyncHandler.js';
+import catchAsync from '../../utils/catchAsync.js';
 import ApiError from '../../utils/ApiError.js';
 import ApiResponse from '../../utils/ApiResponse.js';
 import { Facility } from '../../models/facilityBookingModule/facility.model.js';
 
-const createFacility = asyncHandler(async (req, res) => {
+const createFacility = catchAsync(async (req, res) => {
   const { name, description, available, location } = req.body;
 
   const facility = await Facility.create({
@@ -23,7 +23,7 @@ const createFacility = asyncHandler(async (req, res) => {
   )
 });
 
-const getFacilities = asyncHandler(async (req, res) => {
+const getFacilities = catchAsync(async (req, res) => {
   const facilities = await Facility.find();
   
   return res.status(200).json(
