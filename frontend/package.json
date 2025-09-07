@@ -68,7 +68,6 @@
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
     "shadcn-ui": "^0.9.4",
-    "vite": "^6.1.0",
-    "rollup": "4.18.0"
+    "vite": "^6.1.0"
   }
 }
