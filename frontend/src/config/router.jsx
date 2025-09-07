@@ -29,7 +29,7 @@ import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
 import AdminApplication from "../pages/applicationModule/AdminApplications.jsx";
 import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 import ProfileInfoPage from "../pages/commonPages/ProfileInfoPage.jsx";
-import BudgetSponsorshipUser from "../pages/BudgetSponsorship/user.jsx";
+import BudgetSponsorshipUser from "../pages/BudgetSponsorship/User.jsx";
 import Admin from "../pages/BudgetSponsorship/Admin.jsx"
 
 import Voting from "../pages/StudentElection/VotingPage.jsx"
