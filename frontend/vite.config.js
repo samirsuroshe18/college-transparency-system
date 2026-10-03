@@ -4,11 +4,19 @@ import path from 'path';
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+const API_SERVER = 'http://localhost:3002'
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(),tailwindcss()],
+  plugins: [react(), tailwindcss()],
   server: {
-    allowedHosts: ['0794-137-97-131-26.ngrok-free.app']
+    // the server builds email links from FRONTEND_URL, so the port must not drift
+    port: 5176,
+    strictPort: true,
+    // one origin for the browser: the login cookie needs no cross-site setup
+    proxy: {
+      '/api': API_SERVER,
+    },
   },
   resolve: {
     alias: {

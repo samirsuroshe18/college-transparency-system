@@ -1,4 +1,4 @@
-import axiosInstance from './config.js';
+import axiosInstance from './client.js';
 import { showNotificationWithTimeout } from '../redux/slices/notificationSlice.js';
 
 const createBooking = async (formData, setLoading, dispatch) => {

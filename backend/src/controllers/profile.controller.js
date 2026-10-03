@@ -186,6 +186,15 @@ const getPendingProfiles = asyncHandler(async (req, res) => {
     );
 });
 
+// approved faculty, for giving duties
+const getApprovedFaculty = asyncHandler(async (req, res) => {
+    const faculty = await User.find({ role: 'faculty', profileStatus: 'Approved' }).sort({ name: 1 });
+
+    return res.status(200).json(
+        new ApiResponse(200, { faculty }, "Approved faculty")
+    );
+});
+
 const findUser = async (userId) => {
     const user = isValidObjectId(userId) ? await User.findById(userId) : null;
 
@@ -288,6 +297,7 @@ export {
     submitStudentProfile,
     submitFacultyProfile,
     getPendingProfiles,
+    getApprovedFaculty,
     approveProfile,
     rejectProfile,
     setDuties

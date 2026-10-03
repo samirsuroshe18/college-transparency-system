@@ -1,6 +1,8 @@
-import React from "react";
-import { useSelector } from "react-redux";
-import { AlertCircle, Mail, ArrowRight, RefreshCw, FileEdit, CheckCircle2 } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { AlertCircle, ArrowRight, RefreshCw, FileEdit, CheckCircle2, LogOut } from "lucide-react";
+import { logout as logoutRequest } from "../../api/authApi";
+import { logout } from "../../redux/slices/authSlice";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,27 +12,36 @@ const ProfileRejectedPage = () => {
   const role = user?.role || "student";
   const rejectionReason = user?.rejectionReason || "Your profile did not meet the required criteria.";
 
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    await logoutRequest().catch(() => {});
+    dispatch(logout());
+    navigate("/login", { replace: true });
+  };
+
   const nextSteps = [
     {
       icon: FileEdit,
-      title: "Review and Update",
-      description: "Review the rejection reason and update your profile accordingly.",
-      action: "Edit Profile",
-      link: "/edit-profile"
+      title: "Review",
+      description: "Read the reason above and collect what is missing.",
+      action: "Choose role again",
+      onClick: () => navigate("/select-role-screen"),
     },
     {
       icon: RefreshCw,
       title: "Resubmit",
       description: "Submit your profile again after making the necessary changes.",
-      action: "Resubmit",
-      link: user?.role == "student" ? "/student-profile" : "/student-profile"
+      action: "Fill the form",
+      onClick: () => navigate(role === "faculty" ? "/faculty-profile" : "/student-profile"),
     },
     {
-      icon: Mail,
-      title: "Need Help?",
-      description: "Contact our support team for guidance and assistance.",
-      action: "Contact Support",
-      link: "mailto:support@college.edu"
+      icon: LogOut,
+      title: "Later",
+      description: "You can come back and resubmit at any time.",
+      action: "Log out",
+      onClick: handleLogout,
     }
   ];
 
@@ -49,8 +60,7 @@ const ProfileRejectedPage = () => {
                 {role === "faculty" ? "Faculty Profile Not Approved" : "Student Profile Not Approved"}
               </h1>
               <p className="text-gray-600 mt-2 max-w-xl">
-                We apologize, but we couldn't approve your profile at this time. 
-                Don't worry - we'll guide you through the next steps.
+                Your profile could not be approved this time. You can correct it and submit it again.
               </p>
             </div>
 
@@ -79,7 +89,7 @@ const ProfileRejectedPage = () => {
                         <Button
                           variant="outline"
                           className="w-full flex items-center justify-center"
-                          onClick={() => window.location.href = step.link}
+                          onClick={step.onClick}
                         >
                           {step.action}
                           <ArrowRight className="ml-2 h-4 w-4" />
@@ -121,10 +131,6 @@ const ProfileRejectedPage = () => {
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <p className="text-center text-sm text-gray-500 mt-8">
-          Need additional help? Contact our support team at support@college.edu
-        </p>
       </div>
     </div>
   );

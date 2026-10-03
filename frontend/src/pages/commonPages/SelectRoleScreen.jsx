@@ -1,7 +1,5 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { GraduationCap, Users } from 'lucide-react';
 
 const SelectRoleScreen = () => {
@@ -43,16 +41,13 @@ const SelectRoleScreen = () => {
               
               <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-3 md:mb-4">Student Access</h2>
               <p className="text-sm md:text-base text-gray-600 mb-16 md:mb-20 line-clamp-2 md:line-clamp-none">
-                Access your courses, assignments, grades, and connect with peers
+                Vote in elections, raise complaints, book facilities and file applications
               </p>
               
               <div className="absolute bottom-6 md:bottom-8 left-6 md:left-8 right-6 md:right-8">
-                <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  variant="default"
-                >
+                <span className="w-full bg-blue-600 hover:bg-blue-700 text-white block text-center rounded-md px-4 py-2 text-sm font-medium">
                   Continue as Student
-                </Button>
+                </span>
               </div>
             </button>
           </Card>
@@ -72,16 +67,13 @@ const SelectRoleScreen = () => {
               
               <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-3 md:mb-4">Faculty Access</h2>
               <p className="text-sm md:text-base text-gray-600 mb-16 md:mb-20 line-clamp-2 md:line-clamp-none">
-                Manage courses, grade assignments, and communicate with students
+                Review applications, record integrity cases and book facilities
               </p>
               
               <div className="absolute bottom-6 md:bottom-8 left-6 md:left-8 right-6 md:right-8">
-                <Button 
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                  variant="default"
-                >
+                <span className="w-full bg-indigo-600 hover:bg-indigo-700 text-white block text-center rounded-md px-4 py-2 text-sm font-medium">
                   Continue as Faculty
-                </Button>
+                </span>
               </div>
             </button>
           </Card>
@@ -89,7 +81,7 @@ const SelectRoleScreen = () => {
 
         {/* Footer Section */}
         <div className="text-center mt-8 md:mt-12 text-gray-500">
-          <p className="text-sm md:text-base">Need help? Contact support@college.edu</p>
+          <p className="text-sm md:text-base">An admin reviews your profile before you can use the system.</p>
         </div>
       </div>
     </div>

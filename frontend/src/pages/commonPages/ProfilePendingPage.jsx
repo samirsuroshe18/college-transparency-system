@@ -1,6 +1,9 @@
-import React from "react";
-import { useSelector } from "react-redux";
-import { Loader2, Clock, Mail, AlertCircle, ArrowRight, CheckCircle2 } from "lucide-react";
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Clock, AlertCircle, CheckCircle2, RefreshCw, LogOut } from "lucide-react";
+import { getMe, logout as logoutRequest } from "../../api/authApi";
+import { currentUser, logout } from "../../redux/slices/authSlice";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -8,6 +11,35 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 const ProfilePendingPage = () => {
   const user = useSelector((state) => state.auth.userData);
   const role = user?.role || "student";
+  const [checking, setChecking] = useState(false);
+  const [notice, setNotice] = useState("");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // asks the server for the latest status; an approved or rejected profile moves on by itself
+  const checkAgain = async () => {
+    setChecking(true);
+    setNotice("");
+    try {
+      const res = await getMe();
+      dispatch(currentUser(res.data.user));
+      if (res.data.user.profileStatus === "Pending") {
+        setNotice("Still under review. An admin has not decided yet.");
+      } else {
+        navigate("/", { replace: true });
+      }
+    } catch {
+      setNotice("The status could not be checked. Please try again.");
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logoutRequest().catch(() => {});
+    dispatch(logout());
+    navigate("/login", { replace: true });
+  };
 
   const steps = [
     { status: "completed", title: "Profile Submitted", icon: CheckCircle2 },
@@ -33,8 +65,7 @@ const ProfilePendingPage = () => {
                 {role === "faculty" ? "Faculty Profile Under Review" : "Student Profile Under Review"}
               </h1>
               <p className="text-gray-600 mt-2 max-w-xl">
-                We're currently reviewing your profile to ensure everything meets our standards.
-                This process typically takes 1-2 business days.
+                An admin is reviewing your profile. You get a notice here as soon as it is decided.
               </p>
             </div>
 
@@ -69,49 +100,21 @@ const ProfilePendingPage = () => {
             <Alert className="mb-6 bg-amber-50 border-amber-200">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-600 ml-2">
-                Please ensure your contact information is up to date while we process your profile.
+                You can use the system once your profile is approved.
               </AlertDescription>
             </Alert>
 
-            {/* Support Options */}
+            {/* What a waiting user can do */}
+            {notice && <p className="text-center text-sm text-gray-600 mb-4" role="status">{notice}</p>}
             <div className="grid md:grid-cols-2 gap-4">
-              <Card className="p-4 border border-gray-200 hover:border-blue-200 transition-colors">
-                <div className="flex items-start">
-                  <Mail className="h-5 w-5 text-blue-600 mt-1" />
-                  <div className="ml-4">
-                    <h3 className="font-medium text-gray-900">Email Support</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Need immediate assistance? Our support team is here to help.
-                    </p>
-                    <a
-                      href="mailto:support@college.edu"
-                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 mt-2"
-                    >
-                      Contact Support
-                      <ArrowRight className="ml-1 h-4 w-4" />
-                    </a>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-4 border border-gray-200 hover:border-blue-200 transition-colors">
-                <div className="flex items-start">
-                  <AlertCircle className="h-5 w-5 text-blue-600 mt-1" />
-                  <div className="ml-4">
-                    <h3 className="font-medium text-gray-900">FAQ</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Check our frequently asked questions about the review process.
-                    </p>
-                    <Button
-                      variant="link"
-                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 mt-2 p-0"
-                    >
-                      View FAQ
-                      <ArrowRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
+              <Button onClick={checkAgain} disabled={checking} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                <RefreshCw className={`mr-2 h-4 w-4 ${checking ? "animate-spin" : ""}`} />
+                {checking ? "Checking…" : "Check again"}
+              </Button>
+              <Button onClick={handleLogout} variant="outline" className="w-full">
+                <LogOut className="mr-2 h-4 w-4" />
+                Log out
+              </Button>
             </div>
           </CardContent>
         </Card>

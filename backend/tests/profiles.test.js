@@ -338,6 +338,25 @@ describe('decisions', () => {
     });
 });
 
+describe('approved faculty list', () => {
+    test('lists approved faculty with their duties, for admins only', async () => {
+        await createUser({ role: 'faculty', name: 'Zara Approved', isBoardMember: true, coordinatorOf: { department: 'IT', year: 'SE', division: 'B' } });
+        await createUser({ role: 'faculty', name: 'Amit Approved' });
+        await createUser({ role: 'faculty', name: 'Pending Faculty', profileStatus: 'Pending' });
+        await createUser({ name: 'A Student' });
+
+        const res = await (await admin()).get(`${api}/faculty`);
+        const asFaculty = await (await loginAgent(await createUser({ role: 'faculty' }))).get(`${api}/faculty`);
+
+        expect(res.status).toBe(200);
+        expect(res.body.data.faculty.map((member) => member.name)).toEqual(['Amit Approved', 'Zara Approved']);
+        expect(res.body.data.faculty[1].isBoardMember).toBe(true);
+        expect(res.body.data.faculty[1].coordinatorOf).toEqual({ department: 'IT', year: 'SE', division: 'B' });
+        expect(res.body.data.faculty[0]).not.toHaveProperty('password');
+        expect(asFaculty.status).toBe(403);
+    });
+});
+
 describe('duties', () => {
     test('an admin makes a faculty member a board member and a class coordinator', async () => {
         const faculty = await createUser({ role: 'faculty' });
