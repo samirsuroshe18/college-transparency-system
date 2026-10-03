@@ -14,6 +14,7 @@ import facilityRouter from './routes/facility.routes.js';
 import bookingRouter from './routes/booking.routes.js';
 import applicationRouter from './routes/application.routes.js';
 import budgetRouter from './routes/budget.routes.js';
+import integrityRouter from './routes/integrity.routes.js';
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api/v1/facilities", facilityRouter);
 app.use("/api/v1/bookings", bookingRouter);
 app.use("/api/v1/applications", applicationRouter);
 app.use("/api/v1/budgets", budgetRouter);
+app.use("/api/v1/integrity", integrityRouter);
 
 app.use((req, res, next) => {
     next(new ApiError(404, "Route not found"));
