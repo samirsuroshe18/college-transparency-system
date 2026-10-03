@@ -168,7 +168,7 @@ const ApplicationManagement = () => {
                     <button type="submit" disabled={submitting} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50">
                         {submitting ? "Submitting…" : "Submit Application"}
                     </button>
-                    <p className="text-xs text-gray-500 mt-3">A faculty member may add a review; an admin approves or rejects. You get a notice and an email.</p>
+                    <p className="text-xs text-gray-500 mt-3">A faculty member may add a review; an admin approves or rejects. You get a notice when it is decided.</p>
                 </form>
             )}
 

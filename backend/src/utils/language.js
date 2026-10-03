@@ -1,8 +1,22 @@
 import { Filter } from 'bad-words';
 
+// Words the stock list treats as offensive that a real complaint may need: a student
+// must be able to report harassment, and everyday words must not block a complaint.
+const ALLOWED = [
+    'sex', 'sexy', 'god', 'balls', 'crap', 'damn', 'sadist', 'hell', 'butt', 'screw', 'screwed',
+    'suck', 'sucks', 'sucked', 'piss', 'pissed', 'poop', 'fart', 'drunk', 'kill', 'die', 'dead',
+];
+
 const filter = new Filter();
+filter.removeWords(...ALLOWED);
 
-// whether a text contains words that have no place in a complaint
-const hasOffensiveLanguage = (text) => (typeof text === 'string' && text ? filter.isProfane(text) : false);
+// the first offensive word in a text, as it was written, or null
+const offensiveWord = (text) => {
+    if (typeof text !== 'string' || !text) return null;
 
-export { hasOffensiveLanguage }
+    return text.split(/[^\p{L}\p{N}]+/u).find((word) => word && filter.isProfane(word)) || null;
+};
+
+const hasOffensiveLanguage = (text) => offensiveWord(text) !== null;
+
+export { hasOffensiveLanguage, offensiveWord }

@@ -56,6 +56,8 @@ export const Booking = mongoose.model("Booking", bookingSchema);
 // approvals for the same time cannot both get through. The id is "<facility>:<date>".
 const slotLockSchema = new Schema({
     _id: String,
+    // only the holder of this token may release the lock
+    token: String,
     // a lock left behind by a stopped server is removed by the database after a while
     createdAt: { type: Date, default: Date.now, expires: 60 },
 });

@@ -34,12 +34,6 @@ const candidateSchema = new Schema({
         default: 'Pending',
     },
 
-    // how many votes; who cast them is kept apart, in Vote
-    votes: {
-        type: Number,
-        default: 0,
-    },
-
     decidedBy: { type: Schema.Types.ObjectId, ref: 'User' },
 
 }, { timestamps: true });

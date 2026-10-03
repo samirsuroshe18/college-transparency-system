@@ -8,7 +8,7 @@ const request = (await import('supertest')).default;
 const { default: app } = await import('../src/app.js');
 const { Complaint } = await import('../src/models/complaint.model.js');
 const { Notice } = await import('../src/models/notice.model.js');
-const { hasOffensiveLanguage } = await import('../src/utils/language.js');
+const { hasOffensiveLanguage, offensiveWord } = await import('../src/utils/language.js');
 const { createUser, createAdmin, loginAgent } = await import('./helpers.js');
 
 const api = '/api/v1/complaints';
@@ -125,7 +125,7 @@ describe('submitting', () => {
 
         for (const res of [inTitle, inDescription]) {
             expect(res.status).toBe(400);
-            expect(res.body.message).toBe('Please remove offensive language');
+            expect(res.body.message).toMatch(/^Please remove offensive language: "\w+"$/);
         }
         expect(await Complaint.countDocuments()).toBe(0);
         expect(storeFile).not.toHaveBeenCalled();
@@ -425,5 +425,62 @@ describe('demo accounts and real data', () => {
         expect((await demoStudent.post(`${api}/${sample._id}/vote`).send({ value: 'up' })).status).toBe(200);
         expect((await demoAdmin.patch(`${api}/${sample._id}/resolve`).send({ note: 'Done.' })).status).toBe(200);
         expect((await Complaint.findById(real._id)).votes).toHaveLength(0);
+    });
+});
+
+describe('review fixes', () => {
+    test('complaints about serious or everyday matters are not mistaken for offensive language', () => {
+        const legitimate = [
+            'A teacher asked for sex in return for marks',
+            'God knows when the results will be declared',
+            'The basketball court has no balls',
+            'Hostel food is crap',
+            'The cooler is damn slow',
+            'The warden is a sadist',
+            'What the hell is going on with the timetable',
+        ];
+
+        for (const text of legitimate) {
+            expect(hasOffensiveLanguage(text)).toBe(false);
+        }
+    });
+
+    test('the word that is refused is named, so it can be removed', async () => {
+        expect(offensiveWord('The staff are assholes here')).toBe('assholes');
+        expect(offensiveWord('The food is cold')).toBeNull();
+
+        const res = await (await as(await student())).post(api).send({ title: 'Canteen', description: 'This shit has to stop.' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.message).toBe('Please remove offensive language: "shit"');
+    });
+
+    test('files sent by a demo account are not stored', async () => {
+        const res = await (await as(await student({ isDemo: true }))).post(api)
+            .field('title', 'Sample with a file').field('description', 'A sample complaint.')
+            .attach('document', Buffer.alloc(300), { filename: 'a.pdf', contentType: 'application/pdf' });
+
+        expect(res.status).toBe(201);
+        expect(res.body.message).toBe('Complaint submitted. Files are not stored for demo accounts.');
+        expect(storeFile).not.toHaveBeenCalled();
+        expect((await Complaint.findOne()).documentUrl).toBeUndefined();
+    });
+
+    test('a reveal vote of someone who has left the board no longer counts', async () => {
+        const [a, b, c2] = [await boardMember(), await boardMember(), await boardMember()];
+        const author = await student({ name: 'Hidden Author' });
+        const target = await complaint({ author, isAnonymous: true });
+
+        await (await as(a)).post(`${api}/${target._id}/reveal-vote`);
+        // a leaves the board: two members remain, and both are needed
+        await a.updateOne({ isBoardMember: false });
+        const afterB = await (await as(b)).post(`${api}/${target._id}/reveal-vote`);
+
+        expect(afterB.body.data.complaint.revealed).toBe(false);
+        expect(afterB.body.data.complaint.revealVotes).toBe(1);
+        expect(afterB.body.data.complaint.revealNeeded).toBe(2);
+
+        const afterC = await (await as(c2)).post(`${api}/${target._id}/reveal-vote`);
+        expect(afterC.body.data.complaint.revealed).toBe(true);
     });
 });

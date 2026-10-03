@@ -139,7 +139,9 @@ const StudentElectionPanel = () => {
     try {
       const elections = await listElections();
       // the list has the stages; candidates and this user's part come with each election
-      setDetails(await Promise.all(elections.map((election) => getElection(election._id))));
+      // an election that cannot be loaded (removed a moment ago, say) is left out; the others still show
+      const answers = await Promise.allSettled(elections.map((election) => getElection(election._id)));
+      setDetails(answers.filter((answer) => answer.status === 'fulfilled').map((answer) => answer.value));
       setLoadError("");
     } catch (error) {
       setLoadError(errorMessage(error));

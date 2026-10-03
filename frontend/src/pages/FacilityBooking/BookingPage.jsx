@@ -40,6 +40,8 @@ const BookingPage = () => {
       setFacilities(allFacilities.filter((facility) => facility.available));
       setMyBookings(mine);
     } catch (error) {
+      // the list stops saying "Loading" and the reason is shown
+      setFacilities((current) => current || []);
       setFormError(errorMessage(error));
     }
   }, []);

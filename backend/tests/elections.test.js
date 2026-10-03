@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import request from 'supertest';
 import app from '../src/app.js';
 import { Election } from '../src/models/election.model.js';
@@ -20,10 +21,19 @@ const takingApplications = (overrides) => election(overrides);
 const openForVoting = (overrides) => election({ applicationDeadline: fromNow(-DAY), votingDay: fromNow(0), ...overrides });
 const closed = (overrides) => election({ applicationDeadline: fromNow(-5 * DAY), votingDay: fromNow(-2 * DAY), ...overrides });
 
-const candidate = async (electionDoc, overrides = {}) => {
+// "votes: n" casts n votes for the candidate, each from a voter of its own
+const candidate = async (electionDoc, { votes = 0, ...overrides } = {}) => {
     const user = overrides.student || await student();
-    return Candidate.create({ election: electionDoc._id, student: user._id, agenda: 'Better labs', status: 'Approved', ...overrides, student: user._id });
+    const created = await Candidate.create({ election: electionDoc._id, agenda: 'Better labs', status: 'Approved', ...overrides, student: user._id });
+
+    for (let i = 0; i < votes; i += 1) {
+        await Vote.create({ election: electionDoc._id, voter: new mongoose.Types.ObjectId(), candidate: created._id });
+    }
+
+    return created;
 };
+
+const votesFor = (created) => Vote.countDocuments({ candidate: created._id });
 
 const as = async (user) => loginAgent(user);
 const asAdmin = async (overrides) => loginAgent(await createAdmin(overrides));
@@ -252,7 +262,6 @@ describe('applying as a candidate', () => {
         const saved = await Candidate.findOne({ election: target._id, student: me._id });
         expect(saved.status).toBe('Pending');
         expect(saved.agenda).toBe('Cleaner hostel');
-        expect(saved.votes).toBe(0);
     });
 
     test('needs an agenda', async () => {
@@ -363,7 +372,7 @@ describe('voting', () => {
         const res = await vote(await as(voter), target._id, runner._id);
 
         expect(res.status).toBe(201);
-        expect((await Candidate.findById(runner._id)).votes).toBe(1);
+        expect(await votesFor(runner)).toBe(1);
         expect(await Vote.countDocuments({ election: target._id, voter: voter._id })).toBe(1);
     });
 
@@ -380,8 +389,7 @@ describe('voting', () => {
         expect(again.status).toBe(409);
         expect(again.body.message).toBe('You have already voted');
         expect(await Vote.countDocuments()).toBe(1);
-        const counts = (await Candidate.find({ election: target._id })).map((item) => item.votes).sort();
-        expect(counts).toEqual([0, 1]);
+        expect([await votesFor(first), await votesFor(second)].sort()).toEqual([0, 1]);
     });
 
     test('not before the deadline and not after the voting day', async () => {
@@ -437,7 +445,7 @@ describe('voting', () => {
         expect(twoOfThree.body.message).toBe('You are not eligible for this election');
         expect(teacher.status).toBe(403);
         expect(admin.status).toBe(403);
-        expect((await Candidate.findById(runner._id)).votes).toBe(0);
+        expect(await votesFor(runner)).toBe(0);
     });
 
     test('a candidate may vote, also for themselves', async () => {
@@ -551,5 +559,63 @@ describe('demo accounts and real data', () => {
         const runner = await candidate(sample);
 
         expect((await (await as(await student())).post(`${api}/${sample._id}/vote`).send({ candidateId: runner._id })).status).toBe(201);
+    });
+});
+
+describe('review fixes', () => {
+    test('the counts shown are the votes that exist, whatever else is stored', async () => {
+        const target = await openForVoting();
+        const runner = await candidate(target);
+        const voters = [await student(), await student(), await student()];
+        for (const voter of voters) {
+            await Vote.create({ election: target._id, voter: voter._id, candidate: runner._id });
+        }
+
+        const detail = (await (await as(await student())).get(`${api}/${target._id}`)).body.data;
+
+        expect(detail.candidates[0].votes).toBe(3);
+    });
+
+    test('once voting has started an approved candidate cannot be rejected', async () => {
+        const target = await openForVoting({ title: 'Running election' });
+        const runner = await candidate(target, { votes: 2 });
+
+        const res = await (await asAdmin()).patch(`${api}/${target._id}/candidates/${runner._id}`).send({ status: 'Rejected' });
+
+        expect(res.status).toBe(409);
+        expect(res.body.message).toBe('A candidate cannot be rejected once voting has started');
+        expect((await Candidate.findById(runner._id)).status).toBe('Approved');
+        expect(await votesFor(runner)).toBe(2);
+    });
+
+    test('a pending candidate can still be approved or rejected during voting', async () => {
+        const target = await openForVoting();
+        const late = await candidate(target, { status: 'Pending' });
+        const other = await candidate(target, { status: 'Pending' });
+        const agent = await asAdmin();
+
+        expect((await agent.patch(`${api}/${target._id}/candidates/${late._id}`).send({ status: 'Approved' })).status).toBe(200);
+        expect((await agent.patch(`${api}/${target._id}/candidates/${other._id}`).send({ status: 'Rejected' })).status).toBe(200);
+    });
+
+    test('deciding the same way twice is refused and sends no second notice', async () => {
+        const target = await takingApplications();
+        const applicant = await candidate(target, { status: 'Pending' });
+        const agent = await asAdmin();
+
+        await agent.patch(`${api}/${target._id}/candidates/${applicant._id}`).send({ status: 'Approved' });
+        const again = await agent.patch(`${api}/${target._id}/candidates/${applicant._id}`).send({ status: 'Approved' });
+
+        expect(again.status).toBe(409);
+        expect(again.body.message).toBe('This candidacy is already approved');
+        expect(await Notice.countDocuments({ user: applicant.student })).toBe(1);
+    });
+
+    test('the list of elections has an upper size', async () => {
+        await Election.insertMany(Array.from({ length: 205 }, (_, index) => ({ title: `Election ${index}`, applicationDeadline: fromNow(DAY), votingDay: fromNow(2 * DAY) })));
+
+        const res = await (await as(await student())).get(api);
+
+        expect(res.body.data.elections).toHaveLength(200);
     });
 });

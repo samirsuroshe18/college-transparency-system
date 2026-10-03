@@ -2,7 +2,7 @@ import asyncHandler from '../utils/asynchandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { User, DESIGNATIONS } from '../models/user.model.js';
-import { storeFile } from '../utils/uploads.js';
+import { attach } from '../utils/attachments.js';
 import { notify } from '../utils/notices.js';
 import { isValidObjectId } from '../utils/objectId.js';
 import { DEMO_ID_PREFIX, isReservedId } from '../utils/demo.js';
@@ -101,19 +101,13 @@ const submitProfile = async (req, role, fields, duplicateMessage) => {
 
     // The file is stored only once the profile itself has been accepted, so a refused
     // form leaves nothing behind. A file that cannot be stored does not undo the profile.
-    let fileStored = true;
-    if (req.file) {
-        const idProof = await storeFile(req.file, 'profiles').catch(() => null);
-
-        if (idProof) {
-            user.idProof = idProof;
-            await user.save();
-        } else {
-            fileStored = false;
-        }
+    const { url, problem } = await attach(req, 'profiles');
+    if (url) {
+        user.idProof = url;
+        await user.save();
     }
 
-    return { user, fileStored };
+    return { user, fileStored: problem === null };
 };
 
 const submittedMessage = (fileStored) => (fileStored

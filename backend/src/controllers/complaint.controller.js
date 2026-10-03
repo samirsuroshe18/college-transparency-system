@@ -3,10 +3,10 @@ import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { Complaint } from '../models/complaint.model.js';
 import { User } from '../models/user.model.js';
-import { hasOffensiveLanguage } from '../utils/language.js';
+import { offensiveWord } from '../utils/language.js';
 import { readBoolean, readChoice, readText } from '../utils/input.js';
 import { assertReach } from '../utils/reach.js';
-import { storeFile } from '../utils/uploads.js';
+import { attach, attachmentNote } from '../utils/attachments.js';
 import { notify } from '../utils/notices.js';
 import { isValidObjectId } from '../utils/objectId.js';
 
@@ -24,12 +24,20 @@ const seesRevealFigures = (user) => isBoardMember(user) || user.role === 'admin'
 // The board that decides about a complaint: approved faculty marked as board members.
 // The sample college has a board of its own, so its public accounts never decide
 // about a real complaint, and are not counted for one.
-const boardSize = (isDemo) => User.countDocuments({
-    role: 'faculty',
-    isBoardMember: true,
-    profileStatus: 'Approved',
-    isDemo: Boolean(isDemo),
-});
+const boardOf = async (isDemo) => {
+    const ids = await User.find({
+        role: 'faculty',
+        isBoardMember: true,
+        profileStatus: 'Approved',
+        isDemo: Boolean(isDemo),
+    }).distinct('_id');
+
+    return new Set(ids.map(String));
+};
+
+// Only votes of people who are on the board now count: someone who has left the board
+// since voting no longer decides, and the number needed follows the board as it is.
+const countedRevealVotes = (complaint, board) => (complaint.revealVotes || []).filter((id) => board.has(String(id))).length;
 
 // more than half of the board
 const votesNeeded = (size) => Math.floor(size / 2) + 1;
@@ -66,17 +74,17 @@ const present = (complaint, viewer, board) => {
     };
 
     if (seesRevealFigures(viewer) && complaint.isAnonymous) {
-        const revealVotes = complaint.revealVotes || [];
-        view.revealVotes = revealVotes.length;
-        view.revealNeeded = votesNeeded(board[complaint.isDemo ? 'demo' : 'real']);
-        view.myRevealVote = revealVotes.some((id) => String(id) === String(viewer._id));
+        const members = board[complaint.isDemo ? 'demo' : 'real'];
+        view.revealVotes = countedRevealVotes(complaint, members);
+        view.revealNeeded = votesNeeded(members.size);
+        view.myRevealVote = (complaint.revealVotes || []).some((id) => String(id) === String(viewer._id));
     }
 
     return view;
 };
 
-const boardSizes = async () => {
-    const [real, demo] = await Promise.all([boardSize(false), boardSize(true)]);
+const boards = async () => {
+    const [real, demo] = await Promise.all([boardOf(false), boardOf(true)]);
     return { real, demo };
 };
 
@@ -94,14 +102,14 @@ const findComplaint = async (id) => {
 
 // the complaint as it is now, ready to be sent to this viewer
 const answerFor = async (id, viewer) => {
-    const [complaint, board] = await Promise.all([withPeople(Complaint.findById(id)), boardSizes()]);
+    const [complaint, board] = await Promise.all([withPeople(Complaint.findById(id)), boards()]);
     return present(complaint, viewer, board);
 };
 
 const listComplaints = asyncHandler(async (req, res) => {
     const [complaints, board] = await Promise.all([
         withPeople(Complaint.find()).sort({ createdAt: -1 }).limit(LIST_LIMIT),
-        boardSizes(),
+        boards(),
     ]);
 
     return res.status(200).json(
@@ -113,8 +121,10 @@ const submitComplaint = asyncHandler(async (req, res) => {
     const title = readText(req.body.title, 'Title', { max: TITLE_MAX, required: true });
     const description = readText(req.body.description, 'Description', { max: TEXT_MAX, required: true });
 
-    if (hasOffensiveLanguage(title) || hasOffensiveLanguage(description)) {
-        throw new ApiError(400, "Please remove offensive language");
+    // the word is named, so the student knows what to change
+    const offensive = offensiveWord(title) || offensiveWord(description);
+    if (offensive) {
+        throw new ApiError(400, `Please remove offensive language: "${offensive}"`);
     }
 
     const complaint = await Complaint.create({
@@ -126,21 +136,14 @@ const submitComplaint = asyncHandler(async (req, res) => {
     });
 
     // the file is stored only once the complaint itself has been accepted
-    let fileStored = true;
-    if (req.file) {
-        const documentUrl = await storeFile(req.file, 'complaints').catch(() => null);
-
-        if (documentUrl) {
-            complaint.documentUrl = documentUrl;
-            await complaint.save();
-        } else {
-            fileStored = false;
-        }
+    const { url, problem } = await attach(req, 'complaints');
+    if (url) {
+        complaint.documentUrl = url;
+        await complaint.save();
     }
 
     return res.status(201).json(
-        new ApiResponse(201, { complaint: await answerFor(complaint._id, req.user) },
-            fileStored ? "Complaint submitted" : "Complaint submitted, but the file could not be stored")
+        new ApiResponse(201, { complaint: await answerFor(complaint._id, req.user) }, `Complaint submitted${attachmentNote(problem)}`)
     );
 });
 
@@ -188,9 +191,9 @@ const voteToReveal = asyncHandler(async (req, res) => {
         throw new ApiError(409, "You have already voted to reveal");
     }
 
-    const [latest, size] = await Promise.all([Complaint.findById(complaint._id), boardSize(complaint.isDemo)]);
+    const [latest, board] = await Promise.all([Complaint.findById(complaint._id), boardOf(complaint.isDemo)]);
 
-    if (latest.revealVotes.length >= votesNeeded(size)) {
+    if (countedRevealVotes(latest, board) >= votesNeeded(board.size)) {
         // the filter makes sure the author is told once, even when two last votes arrive together
         const revealed = await Complaint.updateOne({ _id: complaint._id, revealedAt: null }, { $set: { revealedAt: new Date() } });
 

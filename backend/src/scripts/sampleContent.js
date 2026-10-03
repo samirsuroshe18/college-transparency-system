@@ -79,13 +79,8 @@ const buildElections = async (who) => {
     await castVotes(past, [[who.aarav, ananya], [who.diya, ananya], [who.kabir, meera], [who.vihaan, ananya]]);
 };
 
-// stores each vote and keeps the candidates' counts in step with them
-const castVotes = async (election, votes) => {
-    for (const [voter, candidate] of votes) {
-        await Vote.create({ election: election._id, voter: voter._id, candidate: candidate._id });
-        await Candidate.updateOne({ _id: candidate._id }, { $inc: { votes: 1 } });
-    }
-};
+const castVotes = (election, votes) =>
+    Vote.create(votes.map(([voter, candidate]) => ({ election: election._id, voter: voter._id, candidate: candidate._id })));
 
 const up = (user) => ({ user: user._id, value: 1 });
 const down = (user) => ({ user: user._id, value: -1 });

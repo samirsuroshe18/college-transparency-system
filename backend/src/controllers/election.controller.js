@@ -13,6 +13,7 @@ import { isValidObjectId } from '../utils/objectId.js';
 const DUPLICATE_KEY = 11000;
 const TITLE_MAX = 120;
 const TEXT_MAX = 2000;
+const LIST_LIMIT = 200;
 
 // what is shown of the student behind a candidacy
 const STUDENT_FIELDS = 'name department currentYear classDivision rollNumber';
@@ -73,7 +74,7 @@ const createElection = asyncHandler(async (req, res) => {
 });
 
 const listElections = asyncHandler(async (req, res) => {
-    const elections = await Election.find().sort({ votingDay: -1 });
+    const elections = await Election.find().sort({ votingDay: -1 }).limit(LIST_LIMIT);
 
     const counts = await Candidate.aggregate([
         { $match: { status: 'Approved' } },
@@ -92,8 +93,19 @@ const listElections = asyncHandler(async (req, res) => {
     );
 });
 
+// How many votes each candidate of an election has. The votes themselves are counted
+// every time, so the figure cannot drift away from them.
+const countVotes = async (electionId) => {
+    const rows = await Vote.aggregate([
+        { $match: { election: electionId } },
+        { $group: { _id: '$candidate', count: { $sum: 1 } } },
+    ]);
+
+    return new Map(rows.map((row) => [String(row._id), row.count]));
+};
+
 // a candidacy as it is sent; counts stay hidden until voting has begun
-const present = (candidate, showVotes) => ({ ...candidate.toObject(), votes: showVotes ? candidate.votes : 0 });
+const present = (candidate, votes) => ({ ...candidate.toObject(), votes });
 
 const getElection = asyncHandler(async (req, res) => {
     const election = await findElection(req.params.id);
@@ -108,10 +120,13 @@ const getElection = asyncHandler(async (req, res) => {
     const approved = all.filter((candidate) => candidate.status === 'Approved');
     const mine = all.find((candidate) => String(candidate.student?._id) === String(req.user._id));
 
+    const counts = showVotes ? await countVotes(election._id) : new Map();
+    const votesOf = (candidate) => counts.get(String(candidate._id)) || 0;
+
     // the winner is settled only once the election is closed; a tie names everyone tied
-    const highest = Math.max(0, ...approved.map((candidate) => candidate.votes));
+    const highest = Math.max(0, ...approved.map(votesOf));
     const winners = stage === 'closed' && highest > 0
-        ? approved.filter((candidate) => candidate.votes === highest)
+        ? approved.filter((candidate) => votesOf(candidate) === highest)
         : [];
 
     const hasVoted = Boolean(await Vote.exists({ election: election._id, voter: req.user._id }));
@@ -119,9 +134,9 @@ const getElection = asyncHandler(async (req, res) => {
     return res.status(200).json(
         new ApiResponse(200, {
             election: { ...election.toObject(), stage },
-            candidates: (isAdmin ? all : approved).map((candidate) => present(candidate, showVotes)),
-            myCandidacy: mine ? present(mine, showVotes) : null,
-            winners: winners.map((candidate) => present(candidate, true)),
+            candidates: (isAdmin ? all : approved).map((candidate) => present(candidate, votesOf(candidate))),
+            myCandidacy: mine ? present(mine, votesOf(mine)) : null,
+            winners: winners.map((candidate) => present(candidate, votesOf(candidate))),
             eligible: isEligible(election, req.user),
             hasVoted,
         }, "Election")
@@ -195,6 +210,16 @@ const decideCandidate = asyncHandler(async (req, res) => {
 
     const status = readChoice(req.body.status, 'Status', ['Approved', 'Rejected'], { required: true });
 
+    if (candidate.status === status) {
+        throw new ApiError(409, `This candidacy is already ${status.toLowerCase()}`);
+    }
+
+    // students may already have voted for an approved candidate; taking the candidate
+    // out now would leave those votes with nobody
+    if (stageOf(election) === 'voting' && candidate.status === 'Approved') {
+        throw new ApiError(409, "A candidate cannot be rejected once voting has started");
+    }
+
     candidate.status = status;
     candidate.decidedBy = req.user._id;
     await candidate.save();
@@ -241,9 +266,6 @@ const castVote = asyncHandler(async (req, res) => {
         }
         throw error;
     }
-
-    // counted only after the vote itself is safely stored
-    await Candidate.updateOne({ _id: candidate._id }, { $inc: { votes: 1 } });
 
     return res.status(201).json(
         new ApiResponse(201, {}, "Your vote has been recorded")

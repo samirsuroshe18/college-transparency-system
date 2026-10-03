@@ -8,6 +8,7 @@ import { isValidObjectId } from '../utils/objectId.js';
 
 const NAME_MAX = 120;
 const TEXT_MAX = 500;
+const LIST_LIMIT = 200;
 
 const findFacility = async (id) => {
     const facility = isValidObjectId(id) ? await Facility.findById(id) : null;
@@ -20,7 +21,7 @@ const findFacility = async (id) => {
 };
 
 const listFacilities = asyncHandler(async (req, res) => {
-    const facilities = await Facility.find().sort({ name: 1 });
+    const facilities = await Facility.find().sort({ name: 1 }).limit(LIST_LIMIT);
 
     return res.status(200).json(
         new ApiResponse(200, { facilities }, "Facilities")

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import asyncHandler from '../utils/asynchandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
@@ -60,16 +61,18 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // and approving are two steps; without this, two approvals could both pass the check.
 const withSlotLock = async (facilityId, date, work) => {
     const lockId = `${facilityId}:${date}`;
+    const token = crypto.randomUUID();
     const STALE_MS = 10000;
 
     for (let attempt = 0; attempt < 60; attempt += 1) {
         try {
-            await SlotLock.create({ _id: lockId });
+            await SlotLock.create({ _id: lockId, token });
 
             try {
                 return await work();
             } finally {
-                await SlotLock.deleteOne({ _id: lockId });
+                // releases this holder's lock only; if it was taken over meanwhile, that one stays
+                await SlotLock.deleteOne({ _id: lockId, token });
             }
         } catch (error) {
             if (error.code !== DUPLICATE_KEY) throw error;

@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { verifyJwt, requireApproved, requireRole } from '../middlewares/auth.middleware.js'
+import { writeLimiter } from '../middlewares/rateLimit.middleware.js'
 import { applyAsCandidate, castVote, createElection, decideCandidate, endElection, getElection, listElections } from "../controllers/election.controller.js";
 
 const router = Router();
 
-router.use(verifyJwt, requireApproved);
+router.use(verifyJwt, requireApproved, writeLimiter);
 
 router.route('/').get(listElections).post(requireRole('admin'), createElection);
 router.route('/:id').get(getElection);

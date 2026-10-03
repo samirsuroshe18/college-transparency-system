@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { verifyJwt, requireApproved, requireRole } from '../middlewares/auth.middleware.js'
 import { acceptFile } from '../middlewares/upload.middleware.js'
-import { profileLimiter } from '../middlewares/rateLimit.middleware.js'
+import { profileLimiter, writeLimiter } from '../middlewares/rateLimit.middleware.js'
 import { decideApplication, listApplications, reviewApplication, submitApplication } from "../controllers/application.controller.js";
 
 const router = Router();
 
-router.use(verifyJwt, requireApproved);
+router.use(verifyJwt, requireApproved, writeLimiter);
 
 router.route('/')
     .get(listApplications)

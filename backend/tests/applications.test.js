@@ -264,3 +264,15 @@ describe('demo accounts and real data', () => {
         expect(sendMail).not.toHaveBeenCalled();
     });
 });
+
+describe('review fixes', () => {
+    test('files sent by a demo account are not stored', async () => {
+        const res = await (await as(await student({ isDemo: true }))).post(api)
+            .field('title', 'Sample').field('description', 'A sample application.').field('category', 'event')
+            .attach('file', Buffer.alloc(300), { filename: 'a.pdf', contentType: 'application/pdf' });
+
+        expect(res.status).toBe(201);
+        expect(res.body.message).toBe('Application submitted. Files are not stored for demo accounts.');
+        expect(storeFile).not.toHaveBeenCalled();
+    });
+});

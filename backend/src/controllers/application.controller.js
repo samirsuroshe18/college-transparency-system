@@ -5,7 +5,7 @@ import { Application, APPLICATION_CATEGORIES } from '../models/application.model
 import { User } from '../models/user.model.js';
 import { readChoice, readText } from '../utils/input.js';
 import { assertReach } from '../utils/reach.js';
-import { storeFile } from '../utils/uploads.js';
+import { attach, attachmentNote } from '../utils/attachments.js';
 import { notify } from '../utils/notices.js';
 import { sendMail } from '../utils/mailSender.js';
 import { isValidObjectId } from '../utils/objectId.js';
@@ -60,21 +60,14 @@ const submitApplication = asyncHandler(async (req, res) => {
     });
 
     // the file is stored only once the application itself has been accepted
-    let fileStored = true;
-    if (req.file) {
-        const fileUrl = await storeFile(req.file, 'applications').catch(() => null);
-
-        if (fileUrl) {
-            application.fileUrl = fileUrl;
-            await application.save();
-        } else {
-            fileStored = false;
-        }
+    const { url, problem } = await attach(req, 'applications');
+    if (url) {
+        application.fileUrl = url;
+        await application.save();
     }
 
     return res.status(201).json(
-        new ApiResponse(201, { application: await answerFor(application._id, req.user) },
-            fileStored ? "Application submitted" : "Application submitted, but the file could not be stored")
+        new ApiResponse(201, { application: await answerFor(application._id, req.user) }, `Application submitted${attachmentNote(problem)}`)
     );
 });
 
