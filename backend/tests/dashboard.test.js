@@ -5,6 +5,14 @@ import { User } from '../src/models/user.model.js';
 import { Notice } from '../src/models/notice.model.js';
 import { notify } from '../src/utils/notices.js';
 import { DEMO_LOGINS, DEMO_PASSWORD, ensureAdmin, rebuildSampleCollege } from '../src/scripts/sampleCollege.js';
+import { Election } from '../src/models/election.model.js';
+import { Candidate } from '../src/models/candidate.model.js';
+import { Vote } from '../src/models/vote.model.js';
+import { Complaint } from '../src/models/complaint.model.js';
+import { Facility } from '../src/models/facility.model.js';
+import { Booking } from '../src/models/booking.model.js';
+import { Application } from '../src/models/application.model.js';
+import { stageOf } from '../src/utils/electionStage.js';
 import { createUser, createAdmin, loginAgent } from './helpers.js';
 
 const api = '/api/v1/dashboard';
@@ -32,7 +40,7 @@ describe('dashboard', () => {
 
         expect(res.status).toBe(200);
         expect(res.body.data.role).toBe('admin');
-        expect(cardsOf(res)).toEqual({ pendingProfiles: 2, students: 2, faculty: 1, unreadNotices: 0 });
+        expect(cardsOf(res)).toMatchObject({ pendingProfiles: 2, students: 2, faculty: 1, unreadNotices: 0 });
         expect(res.body.data.cards[0]).toEqual({ key: 'pendingProfiles', label: 'Profiles waiting for approval', value: 2, link: '/pending-request' });
     });
 
@@ -45,7 +53,8 @@ describe('dashboard', () => {
 
         expect(res.body.data.role).toBe('student');
         expect(res.body.data.unreadNotices).toBe(1);
-        expect(cardsOf(res)).toEqual({ unreadNotices: 1 });
+        expect(cardsOf(res)).toMatchObject({ unreadNotices: 1 });
+        expect(cardsOf(res)).not.toHaveProperty('pendingProfiles');
     });
 });
 
@@ -152,7 +161,7 @@ describe('review fixes', () => {
 
         const res = await (await loginAgent(await createAdmin({ isDemo: true }))).get(api);
 
-        expect(cardsOf(res)).toEqual({ pendingProfiles: 1, students: 1, faculty: 1, unreadNotices: 0 });
+        expect(cardsOf(res)).toMatchObject({ pendingProfiles: 1, students: 1, faculty: 1, unreadNotices: 0 });
     });
 
     test('a rebuild keeps the same account ids, so a visitor stays logged in', async () => {
@@ -187,5 +196,205 @@ describe('review fixes', () => {
 
         silenced.mockRestore();
         expect(await User.countDocuments({ email: 'real.person@gmail.com' })).toBe(1);
+    });
+});
+
+describe('module figures', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const fromNow = (ms) => new Date(Date.now() + ms);
+    const tomorrow = fromNow(DAY).toISOString().slice(0, 10);
+
+    const voting = (overrides = {}) => Election.create({ title: 'Open', applicationDeadline: fromNow(-DAY), votingDay: fromNow(0), ...overrides });
+    const hall = () => Facility.create({ name: 'Hall', description: 'd', location: 'l' });
+    const bookingOf = async (user, overrides = {}) => Booking.create({ facility: (await hall())._id, user: user._id, date: tomorrow, startTime: '10:00', endTime: '11:00', purpose: 'p', ...overrides });
+    const applicationOf = (user, overrides = {}) => Application.create({ title: 't', description: 'd', category: 'event', submittedBy: user._id, ...overrides });
+    const complaintOf = (user, overrides = {}) => Complaint.create({ title: 't', description: 'd', author: user._id, ...overrides });
+
+    test('a student sees elections they can still vote in and their own pending requests', async () => {
+        const me = await createUser({ department: 'Computer', currentYear: 'TE', classDivision: 'A' });
+        const other = await createUser();
+        const voted = await voting();
+        await Vote.create({ election: voted._id, voter: me._id, candidate: (await Candidate.create({ election: voted._id, student: other._id, agenda: 'a', status: 'Approved' }))._id });
+        await voting();
+        await voting({ eligibility: { department: 'IT' } });
+        await Election.create({ title: 'Applying', applicationDeadline: fromNow(DAY), votingDay: fromNow(3 * DAY) });
+        await bookingOf(me);
+        await bookingOf(me, { status: 'approved' });
+        await bookingOf(other);
+        await applicationOf(me);
+        await applicationOf(me, { status: 'rejected' });
+
+        const res = await (await loginAgent(me)).get(api);
+
+        expect(cardsOf(res)).toEqual({ openElections: 1, myPendingBookings: 1, myPendingApplications: 1, unreadNotices: 0 });
+    });
+
+    test('a faculty member sees applications waiting for a review; a board member also sees reveal votes waiting', async () => {
+        const student = await createUser();
+        const plain = await createUser({ role: 'faculty' });
+        const board = await createUser({ role: 'faculty', isBoardMember: true });
+        await applicationOf(student);
+        await applicationOf(student, { review: { comment: 'ok', by: plain._id, at: new Date() } });
+        await applicationOf(student, { status: 'approved' });
+        await complaintOf(student, { isAnonymous: true });
+        await complaintOf(student, { isAnonymous: true, revealVotes: [board._id] });
+        await complaintOf(student, { isAnonymous: true, revealedAt: new Date() });
+        await complaintOf(student);
+        await bookingOf(plain);
+
+        const forPlain = cardsOf(await (await loginAgent(plain)).get(api));
+        const forBoard = cardsOf(await (await loginAgent(board)).get(api));
+
+        expect(forPlain).toEqual({ applicationsToReview: 1, myPendingBookings: 1, unreadNotices: 0 });
+        expect(forBoard).toEqual({ applicationsToReview: 1, myPendingBookings: 0, complaintsToReveal: 1, unreadNotices: 0 });
+    });
+
+    test('an admin sees what is waiting for a decision in every module', async () => {
+        const student = await createUser();
+        const election = await Election.create({ title: 'Applying', applicationDeadline: fromNow(DAY), votingDay: fromNow(3 * DAY) });
+        await Candidate.create({ election: election._id, student: student._id, agenda: 'a' });
+        await Candidate.create({ election: election._id, student: (await createUser())._id, agenda: 'a', status: 'Approved' });
+        await bookingOf(student);
+        await bookingOf(student);
+        await bookingOf(student, { status: 'rejected' });
+        await applicationOf(student);
+        await complaintOf(student);
+        await complaintOf(student, { status: 'resolved' });
+
+        const cards = cardsOf(await (await loginAgent(await createAdmin())).get(api));
+
+        expect(cards).toMatchObject({ pendingCandidates: 1, pendingBookings: 2, pendingApplications: 1, openComplaints: 1 });
+    });
+
+    test('the demo admin and demo faculty count sample data only', async () => {
+        const realStudent = await createUser();
+        const demoStudent = await createUser({ isDemo: true });
+        await bookingOf(realStudent);
+        await bookingOf(demoStudent, { isDemo: true });
+        await applicationOf(realStudent);
+        await applicationOf(demoStudent, { isDemo: true });
+        await complaintOf(realStudent, { isAnonymous: true });
+        await complaintOf(demoStudent, { isDemo: true, isAnonymous: true });
+
+        const forAdmin = cardsOf(await (await loginAgent(await createAdmin({ isDemo: true }))).get(api));
+        const forBoard = cardsOf(await (await loginAgent(await createUser({ role: 'faculty', isBoardMember: true, isDemo: true }))).get(api));
+
+        expect(forAdmin).toMatchObject({ pendingBookings: 1, pendingApplications: 1, openComplaints: 1 });
+        expect(forBoard).toMatchObject({ applicationsToReview: 1, complaintsToReveal: 1 });
+    });
+
+    test('the doctor sees notices only, for now', async () => {
+        expect(cardsOf(await (await loginAgent(await createUser({ role: 'doctor' }))).get(api))).toEqual({ unreadNotices: 0 });
+    });
+
+    test('every card has a label and a link into the app', async () => {
+        const res = await (await loginAgent(await createAdmin())).get(api);
+        for (const card of res.body.data.cards) {
+            expect(typeof card.label).toBe('string');
+            expect(card.link).toMatch(/^\//);
+        }
+    });
+});
+
+describe('sample data of the modules', () => {
+    const counts = async () => ({
+        elections: await Election.countDocuments(),
+        candidates: await Candidate.countDocuments(),
+        votes: await Vote.countDocuments(),
+        complaints: await Complaint.countDocuments(),
+        facilities: await Facility.countDocuments(),
+        bookings: await Booking.countDocuments(),
+        applications: await Application.countDocuments(),
+    });
+
+    test('there is an election at every stage, with a winner in the closed one', async () => {
+        await rebuildSampleCollege();
+
+        const elections = await Election.find();
+        expect(elections.map((election) => stageOf(election)).sort()).toEqual(['applications', 'closed', 'voting']);
+        expect(elections.every((election) => election.isDemo)).toBe(true);
+
+        const student = await loginAgent(await User.findOne({ email: DEMO_LOGINS.student }), DEMO_PASSWORD);
+        const closed = elections.find((election) => stageOf(election) === 'closed');
+        const open = elections.find((election) => stageOf(election) === 'voting');
+        const closedView = (await student.get(`/api/v1/elections/${closed._id}`)).body.data;
+        const openView = (await student.get(`/api/v1/elections/${open._id}`)).body.data;
+
+        expect(closedView.winners).toHaveLength(1);
+        expect(openView.candidates.length).toBeGreaterThanOrEqual(3);
+        expect(openView.eligible).toBe(true);
+        expect(openView.hasVoted).toBe(false);
+        // the counts shown match the votes that exist
+        const shown = openView.candidates.reduce((sum, candidate) => sum + candidate.votes, 0);
+        expect(shown).toBe(await Vote.countDocuments({ election: open._id }));
+    });
+
+    test('every module has sample content in different states', async () => {
+        await rebuildSampleCollege();
+
+        expect(await Complaint.countDocuments({ isDemo: true })).toBe(6);
+        expect(await Complaint.countDocuments({ isAnonymous: true })).toBe(2);
+        expect(await Complaint.countDocuments({ status: 'resolved' })).toBe(1);
+        expect(await Facility.countDocuments({ isDemo: true })).toBe(4);
+        expect((await Booking.distinct('status')).sort()).toEqual(['approved', 'pending', 'rejected']);
+        expect(await Booking.countDocuments({ isDemo: true })).toBe(6);
+        expect((await Application.distinct('status')).sort()).toEqual(['approved', 'pending', 'rejected']);
+        expect(await Application.countDocuments({ isDemo: true })).toBe(6);
+    });
+
+    test('the demo student has something to do in each module', async () => {
+        await rebuildSampleCollege();
+        const student = await loginAgent(await User.findOne({ email: DEMO_LOGINS.student }), DEMO_PASSWORD);
+        const admin = await loginAgent(await User.findOne({ email: DEMO_LOGINS.admin }), DEMO_PASSWORD);
+
+        expect(cardsOf(await student.get(api)).openElections).toBe(1);
+        const adminCards = cardsOf(await admin.get(api));
+        expect(adminCards.pendingBookings).toBeGreaterThan(0);
+        expect(adminCards.pendingApplications).toBeGreaterThan(0);
+        expect(adminCards.pendingCandidates).toBeGreaterThan(0);
+        expect(adminCards.openComplaints).toBeGreaterThan(0);
+    });
+
+    test('running it again gives the same content, not more', async () => {
+        await rebuildSampleCollege();
+        const first = await counts();
+
+        await rebuildSampleCollege();
+
+        expect(await counts()).toEqual(first);
+        expect(first.elections).toBe(3);
+    });
+
+    test('what real users made is kept; what they did to sample data goes with it', async () => {
+        await rebuildSampleCollege();
+        const real = await createUser({ email: 'real.person@gmail.com' });
+        const realElection = await Election.create({ title: 'Real election', applicationDeadline: new Date(Date.now() - 1000), votingDay: new Date() });
+        const realCandidate = await Candidate.create({ election: realElection._id, student: real._id, agenda: 'a', status: 'Approved' });
+        await Vote.create({ election: realElection._id, voter: real._id, candidate: realCandidate._id });
+        await Complaint.create({ title: 'Real complaint', description: 'd', author: real._id });
+        const realHall = await Facility.create({ name: 'Real hall', description: 'd', location: 'l' });
+        await Booking.create({ facility: realHall._id, user: real._id, date: '2030-01-01', startTime: '10:00', endTime: '11:00', purpose: 'p' });
+        await Application.create({ title: 'Real application', description: 'd', category: 'event', submittedBy: real._id });
+        // the real user votes in the sample election and books a sample facility
+        const sampleElection = (await Election.find({ isDemo: true })).find((election) => stageOf(election) === 'voting');
+        const sampleCandidate = await Candidate.findOne({ election: sampleElection._id, status: 'Approved' });
+        await Vote.create({ election: sampleElection._id, voter: real._id, candidate: sampleCandidate._id });
+        const sampleHall = await Facility.findOne({ isDemo: true });
+        await Booking.create({ facility: sampleHall._id, user: real._id, date: '2030-01-01', startTime: '10:00', endTime: '11:00', purpose: 'p', isDemo: true });
+        const before = await counts();
+
+        await rebuildSampleCollege();
+
+        expect(await Election.countDocuments({ title: 'Real election' })).toBe(1);
+        expect(await Candidate.countDocuments({ _id: realCandidate._id })).toBe(1);
+        expect(await Vote.countDocuments({ election: realElection._id })).toBe(1);
+        expect(await Complaint.countDocuments({ title: 'Real complaint' })).toBe(1);
+        expect(await Facility.countDocuments({ name: 'Real hall' })).toBe(1);
+        expect(await Booking.countDocuments({ facility: realHall._id })).toBe(1);
+        expect(await Application.countDocuments({ title: 'Real application' })).toBe(1);
+        // the vote and the booking on sample data are gone, and nothing points at removed documents
+        expect(await Vote.countDocuments({ voter: real._id })).toBe(1);
+        expect(await Booking.countDocuments({ user: real._id })).toBe(1);
+        expect(await counts()).toEqual({ ...before, votes: before.votes - 1, bookings: before.bookings - 1 });
     });
 });
