@@ -91,6 +91,16 @@ const IntegrityRecords = () => {
         }
     };
 
+
+    // The form is taken off the page when another tab is shown, and its file box comes back
+    // empty. The chosen file is forgotten with it, so nothing is sent that the form does not show.
+    const showTab = (tab) => {
+        setProof(null);
+        setFileError("");
+        setFormError("");
+        setActiveTab(tab);
+    };
+
     const tabClass = (tab) => `py-2 px-4 mr-2 ${activeTab === tab ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`;
 
     return (
@@ -100,10 +110,10 @@ const IntegrityRecords = () => {
 
             {canRecord && (
                 <div className="flex mb-6 border-b">
-                    <button className={tabClass("view")} onClick={() => setActiveTab("view")}>
+                    <button className={tabClass("view")} onClick={() => showTab("view")}>
                         All Records
                     </button>
-                    <button className={tabClass("add")} onClick={() => setActiveTab("add")}>
+                    <button className={tabClass("add")} onClick={() => showTab("add")}>
                         Add Record
                     </button>
                 </div>

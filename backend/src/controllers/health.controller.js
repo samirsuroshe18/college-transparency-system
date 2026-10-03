@@ -18,8 +18,11 @@ const LIST_LIMIT = 300;
 
 const NOT_ALLOWED = "You are not allowed to do this";
 
-const withPeople = (query) => query
-    .populate('student', 'name rollNumber department currentYear classDivision')
+const STUDENT_FIELDS = 'name rollNumber department currentYear classDivision';
+
+// the doctor is also shown whom to call for the student
+const withPeople = (query, { contact = false } = {}) => query
+    .populate('student', contact ? `${STUDENT_FIELDS} emergencyContact` : STUDENT_FIELDS)
     .populate('assessment.by', 'name');
 
 // the demo accounts are public, so they are shown the sample college only
@@ -27,8 +30,18 @@ const withinReach = (actor) => (actor.isDemo ? { isDemo: true } : {});
 
 const isCoordinator = (user) => user.role === 'faculty' && Boolean(user.coordinatorOf?.department);
 
-// urgent open concerns first, then the other open ones, then what is already assessed
-const rankOf = (concern) => (concern.status === 'open' ? (concern.urgency === 'urgent' ? 0 : 1) : 2);
+// For the doctor: every open concern, urgent ones first, then the latest assessed ones.
+// Open concerns are read on their own, so no amount of history can push one out.
+const concernsForDoctor = async (doctor) => {
+    const reach = withinReach(doctor);
+    const [open, assessed] = await Promise.all([
+        withPeople(HealthConcern.find({ ...reach, status: 'open' }), { contact: true }).sort({ createdAt: -1 }),
+        withPeople(HealthConcern.find({ ...reach, status: 'assessed' }), { contact: true }).sort({ createdAt: -1 }).limit(LIST_LIMIT),
+    ]);
+    const urgent = (concern) => concern.urgency === 'urgent';
+
+    return [...open.filter(urgent), ...open.filter((concern) => !urgent(concern)), ...assessed];
+};
 
 const listConcerns = asyncHandler(async (req, res) => {
     const { role } = req.user;
@@ -37,13 +50,9 @@ const listConcerns = asyncHandler(async (req, res) => {
         throw new ApiError(403, NOT_ALLOWED);
     }
 
-    const filter = role === 'student' ? { student: req.user._id } : withinReach(req.user);
-    const concerns = await withPeople(HealthConcern.find(filter)).sort({ createdAt: -1 }).limit(LIST_LIMIT);
-
-    if (role === 'doctor') {
-        // the sort is stable, so the newest stays first inside each group
-        concerns.sort((a, b) => rankOf(a) - rankOf(b));
-    }
+    const concerns = role === 'doctor'
+        ? await concernsForDoctor(req.user)
+        : await withPeople(HealthConcern.find({ student: req.user._id })).sort({ createdAt: -1 }).limit(LIST_LIMIT);
 
     return res.status(200).json(
         new ApiResponse(200, { concerns }, "Health concerns")
@@ -153,15 +162,18 @@ const assessConcern = asyncHandler(async (req, res) => {
     const leaveDays = readLeaveDays(req.body.leaveDays);
     const diagnosis = readText(req.body.diagnosis, 'Diagnosis', { max: TEXT_MAX, required: true });
 
+    // one reading of the clock, so the first and the last day are counted from the same moment
+    const now = new Date();
+
     const changes = {
         status: 'assessed',
-        assessment: { diagnosis, leaveDays, by: req.user._id, at: new Date() },
+        assessment: { diagnosis, leaveDays, by: req.user._id, at: now },
     };
 
     if (leaveDays > 0) {
         // the leave starts today and counts today
-        changes.leaveFrom = collegeToday();
-        changes.leaveUntil = collegeDayFromNow(leaveDays - 1);
+        changes.leaveFrom = collegeToday(now);
+        changes.leaveUntil = collegeDayFromNow(leaveDays - 1, now);
     }
 
     // the filter lets one assessment through, however many arrive together
@@ -185,7 +197,7 @@ const assessConcern = asyncHandler(async (req, res) => {
     }
 
     return res.status(200).json(
-        new ApiResponse(200, { concern: await withPeople(HealthConcern.findById(concern._id)) }, "Concern assessed")
+        new ApiResponse(200, { concern: await withPeople(HealthConcern.findById(concern._id), { contact: true }) }, "Concern assessed")
     );
 });
 

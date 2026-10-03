@@ -27,6 +27,13 @@ describe('collegeToday', () => {
         process.env.COLLEGE_UTC_OFFSET_MINUTES = 'soon';
         expect(collegeToday(new Date('2026-11-12T18:30:00Z'))).toBe('2026-11-13');
     });
+
+    test('a setting left blank or out of range falls back to India', () => {
+        for (const value of ['', '   ', '100000', '-100000']) {
+            process.env.COLLEGE_UTC_OFFSET_MINUTES = value;
+            expect(collegeToday(new Date('2026-11-12T18:30:00Z'))).toBe('2026-11-13');
+        }
+    });
 });
 
 describe('collegeDayFromNow', () => {

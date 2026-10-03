@@ -107,17 +107,23 @@ const rebuildSampleCollege = async () => {
     return { users: users.length };
 };
 
-// A real admin account for the owner of the installation, made once
-const ensureAdmin = async () => {
-    const email = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-    const password = process.env.ADMIN_PASSWORD;
+// Admins and the doctor do not sign up: their accounts come from the settings, made once
+const ensureStaff = async (role, name, emailKey, passwordKey) => {
+    const email = (process.env[emailKey] || '').trim().toLowerCase();
+    const password = process.env[passwordKey];
 
     if (!email || !password) return false;
     if (await User.exists({ email })) return false;
 
-    await User.create({ name: 'Administrator', email, password, role: 'admin', isVerified: true, profileStatus: 'Approved' });
+    await User.create({ name, email, password, role, isVerified: true, profileStatus: 'Approved' });
     return true;
 };
+
+// A real admin account for the owner of the installation
+const ensureAdmin = () => ensureStaff('admin', 'Administrator', 'ADMIN_EMAIL', 'ADMIN_PASSWORD');
+
+// The college's own doctor, who answers the health concerns of real students
+const ensureDoctor = () => ensureStaff('doctor', 'College Doctor', 'DOCTOR_EMAIL', 'DOCTOR_PASSWORD');
 
 // For the start of the server: a sample college that cannot be built must not keep the
 // server from starting, so the failure is reported and the server carries on.
@@ -132,4 +138,4 @@ const startSampleCollege = async () => {
     }
 };
 
-export { rebuildSampleCollege, removeSampleCollege, startSampleCollege, ensureAdmin }
+export { rebuildSampleCollege, removeSampleCollege, startSampleCollege, ensureAdmin, ensureDoctor }

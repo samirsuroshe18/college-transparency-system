@@ -2,10 +2,11 @@
 import 'dotenv/config';
 import connectDB from './database/database.js';
 import app from './app.js';
-import { ensureAdmin, startSampleCollege } from './scripts/sampleCollege.js';
+import { ensureAdmin, ensureDoctor, startSampleCollege } from './scripts/sampleCollege.js';
 
 connectDB().then(async () => {
     await ensureAdmin();
+    await ensureDoctor();
 
     // visitors change the sample college while trying things out; a fresh start puts it back
     if (process.env.SEED_ON_START === 'true') {

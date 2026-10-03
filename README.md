@@ -28,7 +28,7 @@ afterwards. [docs/design.md](docs/design.md) describes the whole design.
 | Student | Sign-up, then approved by an admin | Vote, stand in elections, raise complaints, book facilities, apply, ask for budgets, write to the doctor |
 | Faculty | Sign-up, then approved by an admin | Review applications, book facilities, ask for budgets, record integrity cases. A board member votes on revealing anonymous complaints; a class coordinator sees the medical leave of the class |
 | Admin | Created when the server starts, from `ADMIN_EMAIL` and `ADMIN_PASSWORD` | Approves profiles, candidates, bookings, applications and budgets, resolves complaints, gives duties to faculty |
-| Doctor | Part of the sample college | Reads health concerns, answers them and gives leave |
+| Doctor | Created when the server starts, from `DOCTOR_EMAIL` and `DOCTOR_PASSWORD` | Reads health concerns, answers them and gives leave |
 
 Health concerns are private: only the student and the doctor read them.
 Admins have no access to them.
@@ -59,6 +59,8 @@ The demo accounts are public, so they are fenced in:
   refused.
 - The demo admin sees and decides about sample accounts only. Real sign-ups
   are approved by the admin from `ADMIN_EMAIL`.
+- The demo doctor answers sample students only. The concerns of real
+  students are answered by the doctor from `DOCTOR_EMAIL`.
 - The demo doctor and the demo coordinator see the health data of sample
   students only.
 - Files attached by a demo account are not stored, and no email is sent to a
@@ -66,7 +68,13 @@ The demo accounts are public, so they are fenced in:
 - Nobody can sign up with a `@campus.demo` address.
 - With `SEED_ON_START=true` the sample college is rebuilt every time the
   server starts, which undoes whatever visitors did to it. Real accounts and
-  their data are not touched.
+  what they made are not touched; what a real account did to sample data (a
+  vote in a sample election, a booking of a sample hall) goes with the
+  sample data.
+
+Reading is not fenced: like every approved user, a demo account can read
+what the college publishes to everyone, such as complaints, budgets and
+integrity records.
 
 ## Tech stack
 
@@ -112,6 +120,7 @@ npm install
 | `BREVO_API_KEY`, `MAIL_FROM` | Optional. Send email through the Brevo HTTPS API instead of SMTP |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Optional. Without them, forms work but attachments are not stored |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Optional. An admin account created when the server starts |
+| `DOCTOR_EMAIL`, `DOCTOR_PASSWORD` | Optional. The college doctor's account, created when the server starts |
 | `COLLEGE_UTC_OFFSET_MINUTES` | Optional. How far the college is from UTC, in minutes. Defaults to `330` (India). Booking days, voting days and leave days are days at the college |
 | `SEED_ON_START` | `true` rebuilds the sample college every time the server starts |
 
@@ -144,7 +153,9 @@ This builds the sample college described under
 college and touches nothing else.
 
 To try the sign-up flow end to end, set `ADMIN_EMAIL` and `ADMIN_PASSWORD`:
-accounts made by signing up are approved by that admin.
+accounts made by signing up are approved by that admin. Set `DOCTOR_EMAIL`
+and `DOCTOR_PASSWORD` as well if real students should be able to reach a
+doctor.
 
 ### Tests
 
@@ -173,14 +184,16 @@ The server and the web app are deployed separately.
 Attachments are optional everywhere: an ID proof on a profile, a document on
 a complaint, a file on an application, a bill on a budget request, proof on
 an integrity record, a report on a health concern. A file is a JPEG, PNG or
-WebP image or a PDF of at most 2 MB, sent by a logged-in user.
+WebP image or a PDF of at most 2 MB, sent by a logged-in user. A stored file
+is reached by its address, which is long and random and is given only to the
+people who can see the item it belongs to.
 
 ## API overview
 
 Every route is under `/api/v1` and answers
 `{ statusCode, data, message, success }`. Login is kept in an httpOnly
-cookie. Apart from the account routes, every route needs a login and an
-approved profile.
+cookie. Apart from the account routes and submitting a profile, every route
+needs a login and an approved profile.
 
 | Route | Who | Purpose |
 |---|---|---|

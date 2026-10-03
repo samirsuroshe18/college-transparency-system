@@ -164,6 +164,27 @@ describe('reading concerns', () => {
         expect(res.body.data.concerns[0].student).not.toHaveProperty('email');
     });
 
+    test('the doctor is shown whom to call; the contact is the student\'s own to know', async () => {
+        const owner = await student();
+        await concern({ student: owner, urgency: 'urgent' });
+
+        const forDoctor = (await (await as(await doctor())).get(concerns)).body.data.concerns[0];
+
+        expect(forDoctor.student.emergencyContact).toMatchObject({ name: 'Asha', relation: 'Mother', contact: '9000000001' });
+        expect(forDoctor.student).not.toHaveProperty('email');
+        expect(forDoctor.student).not.toHaveProperty('address');
+    });
+
+    test('open concerns are never pushed out of the doctor\'s list by assessed ones', async () => {
+        const owner = await student();
+        await concern({ student: owner, symptoms: 'Old and still open', createdAt: new Date(Date.now() - 86400000) });
+        await HealthConcern.insertMany(Array.from({ length: 305 }, () => ({ student: owner._id, symptoms: 'Done', status: 'assessed' })));
+
+        const list = (await (await as(await doctor())).get(concerns)).body.data.concerns;
+
+        expect(list[0].symptoms).toBe('Old and still open');
+    });
+
     test('the demo doctor sees only sample concerns', async () => {
         await concern({ symptoms: 'A real one' });
         await concern({ symptoms: 'A sample one', isDemo: true });
@@ -256,6 +277,21 @@ describe('assessing', () => {
         expect((await agent.patch(url).send({ leaveDays: 2 })).body.message).toBe('Diagnosis is required');
         expect((await HealthConcern.findById(existing._id)).status).toBe('open');
         expect((await agent.patch(url).send({ diagnosis: 'Viral fever', leaveDays: '30' })).status).toBe(200);
+    });
+
+    test('two assessments sent together: one is saved, the other refused', async () => {
+        const owner = await student();
+        const existing = await concern({ student: owner });
+        const agent = await as(await doctor());
+        const url = `${concerns}/${existing._id}/assess`;
+
+        const answers = await Promise.all([
+            agent.patch(url).send({ diagnosis: 'One', leaveDays: 1 }),
+            agent.patch(url).send({ diagnosis: 'Two', leaveDays: 2 }),
+        ]);
+
+        expect(answers.map((res) => res.status).sort()).toEqual([200, 409]);
+        expect(await Notice.countDocuments({ user: owner._id })).toBe(1);
     });
 
     test('a concern is assessed once', async () => {

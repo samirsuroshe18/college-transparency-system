@@ -114,9 +114,21 @@ const Budgets = () => {
             await load();
         } catch (error) {
             toast.error(error);
+            // the demo admin is shared, so somebody else may have decided it meanwhile
+            await load();
         } finally {
             setBusyId(null);
         }
+    };
+
+
+    // The form is taken off the page when another tab is shown, and its file box comes back
+    // empty. The chosen file is forgotten with it, so nothing is sent that the form does not show.
+    const showTab = (tab) => {
+        setBill(null);
+        setFileError("");
+        setFormError("");
+        setActiveTab(tab);
     };
 
     const tabClass = (tab) => `py-2 px-4 mr-2 ${activeTab === tab ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`;
@@ -130,11 +142,11 @@ const Budgets = () => {
             <p className="text-sm text-gray-600 mb-6">Every request for college money, and what was decided about it, is shown to everyone.</p>
 
             <div className="flex mb-6 border-b">
-                <button className={tabClass("view")} onClick={() => setActiveTab("view")}>
+                <button className={tabClass("view")} onClick={() => showTab("view")}>
                     All Requests
                 </button>
                 {canRequest && (
-                    <button className={tabClass("submit")} onClick={() => setActiveTab("submit")}>
+                    <button className={tabClass("submit")} onClick={() => showTab("submit")}>
                         New Request
                     </button>
                 )}

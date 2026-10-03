@@ -50,7 +50,7 @@ const readDate = (value, label, { required = false } = {}) => {
 
 // An amount of money: a number, or a form's text of one, above zero and with at most
 // two decimals. Anything else is refused.
-const MONEY_PATTERN = /^\d+(\.\d+)?$/;
+const MONEY_PATTERN = /^(0|[1-9]\d*)(\.\d+)?$/;
 
 const readMoney = (value, label) => {
     const text = typeof value === 'number' ? String(value) : (typeof value === 'string' ? value.trim() : '');
@@ -60,7 +60,10 @@ const readMoney = (value, label) => {
         throw new ApiError(400, `${label} must be a number above 0`);
     }
 
-    if (Math.round(amount * 100) / 100 !== amount) {
+    // counted in the text, before the number could round the extra digits away
+    const decimals = (text.split('.')[1] || '').length;
+
+    if (decimals > 2) {
         throw new ApiError(400, `${label} can have at most two decimals`);
     }
 

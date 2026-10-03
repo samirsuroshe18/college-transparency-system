@@ -4,7 +4,7 @@ import app from '../src/app.js';
 import { User } from '../src/models/user.model.js';
 import { Notice } from '../src/models/notice.model.js';
 import { notify } from '../src/utils/notices.js';
-import { DEMO_LOGINS, DEMO_PASSWORD, ensureAdmin, rebuildSampleCollege } from '../src/scripts/sampleCollege.js';
+import { DEMO_LOGINS, DEMO_PASSWORD, ensureAdmin, ensureDoctor, rebuildSampleCollege } from '../src/scripts/sampleCollege.js';
 import { Election } from '../src/models/election.model.js';
 import { Candidate } from '../src/models/candidate.model.js';
 import { Vote } from '../src/models/vote.model.js';
@@ -151,6 +151,36 @@ describe('ensureAdmin', () => {
         process.env.ADMIN_EMAIL = 'owner@college.edu';
 
         expect(await ensureAdmin()).toBe(false);
+        expect(await User.countDocuments()).toBe(0);
+    });
+});
+
+describe('ensureDoctor', () => {
+    afterEach(() => {
+        delete process.env.DOCTOR_EMAIL;
+        delete process.env.DOCTOR_PASSWORD;
+    });
+
+    test('creates the college doctor once from the settings, able to use the system', async () => {
+        process.env.DOCTOR_EMAIL = 'Doctor@College.edu';
+        process.env.DOCTOR_PASSWORD = 'doctor-secret';
+
+        expect(await ensureDoctor()).toBe(true);
+        expect(await ensureDoctor()).toBe(false);
+
+        const agent = request.agent(app);
+        const res = await agent.post('/api/v1/users/login').send({ email: 'doctor@college.edu', password: 'doctor-secret' });
+        expect(res.status).toBe(200);
+        expect(res.body.data.user.role).toBe('doctor');
+        expect(res.body.data.user.isDemo).toBe(false);
+        expect((await agent.get('/api/v1/health-concerns')).status).toBe(200);
+        expect(await User.countDocuments({ role: 'doctor' })).toBe(1);
+    });
+
+    test('does nothing without both settings', async () => {
+        process.env.DOCTOR_PASSWORD = 'doctor-secret';
+
+        expect(await ensureDoctor()).toBe(false);
         expect(await User.countDocuments()).toBe(0);
     });
 });

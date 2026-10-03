@@ -36,9 +36,10 @@ const findBudget = async (id) => {
 // money is added in hundredths, so the sums come out exact
 const toCents = (amount) => Math.round((amount || 0) * 100);
 
-// what was asked for and what was approved, for every category
-const totalsOf = async () => {
-    const rows = await Budget.find().select('category status requestedAmount approvedAmount');
+// What was asked for and what was approved, for every category. The sample college's
+// money and the real college's are never added together: each viewer gets their own.
+const totalsOf = async (viewer) => {
+    const rows = await Budget.find({ isDemo: Boolean(viewer.isDemo) }).select('category status requestedAmount approvedAmount');
 
     return BUDGET_CATEGORIES.map((category) => {
         const inCategory = rows.filter((row) => row.category === category);
@@ -54,7 +55,7 @@ const totalsOf = async () => {
 const listBudgets = asyncHandler(async (req, res) => {
     const [budgets, totals] = await Promise.all([
         withPeople(Budget.find()).sort({ createdAt: -1 }).limit(LIST_LIMIT),
-        totalsOf(),
+        totalsOf(req.user),
     ]);
 
     return res.status(200).json(

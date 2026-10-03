@@ -144,6 +144,37 @@ describe('the list and totals', () => {
     });
 });
 
+describe('totals and the sample college', () => {
+    test('sample money is not added to the college\'s own, and the other way round', async () => {
+        await budget({ category: 'event', requestedAmount: 100.1, status: 'approved', approvedAmount: 100.1 });
+        await budget({ category: 'event', requestedAmount: 200.2, status: 'approved', approvedAmount: 0.2 });
+        await budget({ category: 'event', requestedAmount: 5000, status: 'approved', approvedAmount: 4000, isDemo: true });
+
+        const real = (await (await as(await student())).get(api)).body.data;
+        const demo = (await (await as(await student({ isDemo: true }))).get(api)).body.data;
+
+        expect(real.totals[0]).toEqual({ category: 'event', requested: 300.3, approved: 100.3 });
+        expect(demo.totals[0]).toEqual({ category: 'event', requested: 5000, approved: 4000 });
+        // the requests themselves stay open to everyone
+        expect(real.budgets).toHaveLength(3);
+        expect(demo.budgets).toHaveLength(3);
+    });
+});
+
+describe('amounts', () => {
+    test('an amount is written plainly, with at most two decimals', async () => {
+        const agent = await as(await student());
+        const send = (requestedAmount) => agent.post(api).send({ title: 't', category: 'event', description: 'd', requestedAmount });
+
+        for (const amount of ['0.100000000000000000001', '012', '1e3', '10.999', ' ', '-5', '0', '0.00']) {
+            expect((await send(amount)).status).toBe(400);
+        }
+        for (const amount of ['12', '0.5', '1500.25', 99.99]) {
+            expect((await send(amount)).status).toBe(201);
+        }
+    });
+});
+
 describe('deciding', () => {
     test('an admin approves with an amount, and the requester is told', async () => {
         const admin = await createAdmin();

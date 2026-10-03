@@ -69,6 +69,16 @@ const StudentHealth = () => {
         }
     };
 
+
+    // The form is taken off the page when another tab is shown, and its file box comes back
+    // empty. The chosen file is forgotten with it, so nothing is sent that the form does not show.
+    const showTab = (tab) => {
+        setFile(null);
+        setFileError("");
+        setFormError("");
+        setActiveTab(tab);
+    };
+
     const tabClass = (tab) => `py-2 px-4 mr-2 ${activeTab === tab ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`;
 
     return (
@@ -77,10 +87,10 @@ const StudentHealth = () => {
             <p className="text-sm text-gray-600 mb-6">Only you and the college doctor can read what you write here. Your class coordinator is told about a leave, never about the illness.</p>
 
             <div className="flex mb-6 border-b">
-                <button className={tabClass("view")} onClick={() => setActiveTab("view")}>
+                <button className={tabClass("view")} onClick={() => showTab("view")}>
                     My Concerns
                 </button>
-                <button className={tabClass("report")} onClick={() => setActiveTab("report")}>
+                <button className={tabClass("report")} onClick={() => showTab("report")}>
                     Report a Concern
                 </button>
             </div>

@@ -4,9 +4,13 @@ const DEFAULT_OFFSET_MINUTES = 330;
 const MINUTE_MS = 60 * 1000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
 
+// no place on earth is further than 14 hours from UTC
+const MAX_OFFSET_MINUTES = 14 * 60;
+
 const offsetMs = () => {
-    const configured = Number(process.env.COLLEGE_UTC_OFFSET_MINUTES);
-    const usable = process.env.COLLEGE_UTC_OFFSET_MINUTES !== undefined && Number.isFinite(configured);
+    const setting = (process.env.COLLEGE_UTC_OFFSET_MINUTES || '').trim();
+    const configured = Number(setting);
+    const usable = setting !== '' && Number.isFinite(configured) && Math.abs(configured) <= MAX_OFFSET_MINUTES;
 
     return (usable ? configured : DEFAULT_OFFSET_MINUTES) * MINUTE_MS;
 };

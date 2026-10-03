@@ -46,6 +46,8 @@ const DoctorConcerns = () => {
             setConcerns((current) => current.map((item) => (item._id === concern._id ? res.data.concern : item)));
         } catch (error) {
             toast.error(error);
+            // the demo doctor is shared, so somebody else may have assessed it meanwhile
+            await load();
         } finally {
             setBusyId(null);
         }
@@ -96,6 +98,13 @@ const DoctorConcerns = () => {
                             </div>
 
                             {concern.description && <p className="mt-3 text-gray-700 whitespace-pre-line break-words">{concern.description}</p>}
+
+                            {concern.student?.emergencyContact?.contact && (
+                                <p className="mt-2 text-sm text-gray-600 break-words">
+                                    <span className="font-semibold">Emergency contact:</span> {concern.student.emergencyContact.name}
+                                    {concern.student.emergencyContact.relation ? ` (${concern.student.emergencyContact.relation})` : ""}, {concern.student.emergencyContact.contact}
+                                </p>
+                            )}
 
                             {concern.attachmentUrl && (
                                 <a href={concern.attachmentUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-blue-500 hover:underline">
