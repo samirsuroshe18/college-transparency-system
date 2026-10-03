@@ -26,9 +26,10 @@ import FacilityDashboard from "../pages/FacilityBooking/Dashboard.jsx";
 import BookingPage from "../pages/FacilityBooking/BookingPage.jsx";
 import BookingRequests from "../pages/FacilityBooking/AdminPanel.jsx";
 import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
+import Budgets from "../pages/BudgetSponsorship/Budgets.jsx";
+import IntegrityRecords from "../pages/cheating/IntegrityRecords.jsx";
+import HealthPage from "../pages/HealthModule/HealthPage.jsx";
 
-// The pages of the budget, integrity and health modules are in src/pages and are added
-// here as each module is connected.
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -57,6 +58,10 @@ const router = createBrowserRouter(
             <Route path="facility-bookings" element={<BookingRequests />} />
 
             <Route path="application-page" element={<ApplicationManagement />} />
+
+            <Route path="budgets" element={<Budgets />} />
+            <Route path="integrity" element={<IntegrityRecords />} />
+            <Route path="health" element={<RequireRole roles={["student", "faculty", "doctor"]}><HealthPage /></RequireRole>} />
           </Route>
         </Route>
 
