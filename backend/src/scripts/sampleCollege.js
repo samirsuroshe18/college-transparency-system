@@ -40,7 +40,11 @@ const faculty = (name, email, facultyId, department, designation, extra = {}) =>
 const people = [
     // the demo logins
     student('Riya Demo', DEMO_LOGINS.student, 'CS-TE-A-01', 'Computer', 'TE', 'A'),
-    faculty('Prof. Anil Demo', DEMO_LOGINS.faculty, 'FAC-100', 'Computer', 'Professor', { isBoardMember: true }),
+    faculty('Prof. Anil Demo', DEMO_LOGINS.faculty, 'FAC-100', 'Computer', 'Professor', {
+        isBoardMember: true,
+        // coordinator of the demo student's class
+        coordinatorOf: { department: 'Computer', year: 'TE', division: 'A' },
+    }),
     { name: 'Admin Demo', email: DEMO_LOGINS.admin, role: 'admin' },
     { name: 'Dr. Kavita Demo', email: DEMO_LOGINS.doctor, role: 'doctor' },
 
@@ -51,11 +55,7 @@ const people = [
     student('Ananya Rao', `ananya${DEMO_DOMAIN}`, 'IT-SE-A-01', 'IT', 'SE', 'A', { hostelStatus: 'Hostel' }),
     student('Vihaan Joshi', `vihaan${DEMO_DOMAIN}`, 'IT-SE-A-02', 'IT', 'SE', 'A'),
     student('Meera Nair', `meera${DEMO_DOMAIN}`, 'IT-BE-A-01', 'IT', 'BE', 'A'),
-    faculty('Prof. Sunita Patil', `sunita${DEMO_DOMAIN}`, 'FAC-101', 'Computer', 'Associate Professor', {
-        isBoardMember: true,
-        // coordinator of the demo student's class
-        coordinatorOf: { department: 'Computer', year: 'TE', division: 'A' },
-    }),
+    faculty('Prof. Sunita Patil', `sunita${DEMO_DOMAIN}`, 'FAC-101', 'Computer', 'Associate Professor', { isBoardMember: true }),
     faculty('Prof. Rajesh Kulkarni', `rajesh${DEMO_DOMAIN}`, 'FAC-102', 'IT', 'Assistant Professor', { isBoardMember: true }),
     faculty('Prof. Neha Deshpande', `neha${DEMO_DOMAIN}`, 'FAC-103', 'IT', 'Lecturer'),
 
@@ -107,17 +107,23 @@ const rebuildSampleCollege = async () => {
     return { users: users.length };
 };
 
-// A real admin account for the owner of the installation, made once
-const ensureAdmin = async () => {
-    const email = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-    const password = process.env.ADMIN_PASSWORD;
+// Admins and the doctor do not sign up: their accounts come from the settings, made once
+const ensureStaff = async (role, name, emailKey, passwordKey) => {
+    const email = (process.env[emailKey] || '').trim().toLowerCase();
+    const password = process.env[passwordKey];
 
     if (!email || !password) return false;
     if (await User.exists({ email })) return false;
 
-    await User.create({ name: 'Administrator', email, password, role: 'admin', isVerified: true, profileStatus: 'Approved' });
+    await User.create({ name, email, password, role, isVerified: true, profileStatus: 'Approved' });
     return true;
 };
+
+// A real admin account for the owner of the installation
+const ensureAdmin = () => ensureStaff('admin', 'Administrator', 'ADMIN_EMAIL', 'ADMIN_PASSWORD');
+
+// The college's own doctor, who answers the health concerns of real students
+const ensureDoctor = () => ensureStaff('doctor', 'College Doctor', 'DOCTOR_EMAIL', 'DOCTOR_PASSWORD');
 
 // For the start of the server: a sample college that cannot be built must not keep the
 // server from starting, so the failure is reported and the server carries on.
@@ -132,4 +138,4 @@ const startSampleCollege = async () => {
     }
 };
 
-export { rebuildSampleCollege, removeSampleCollege, startSampleCollege, ensureAdmin }
+export { rebuildSampleCollege, removeSampleCollege, startSampleCollege, ensureAdmin, ensureDoctor }

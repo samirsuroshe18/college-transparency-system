@@ -11,6 +11,9 @@ import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import SettingsIcon from '@mui/icons-material/Settings';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import GavelIcon from '@mui/icons-material/Gavel';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 
 // the full name does not fit next to the icons of the top bar on a phone
 const FULL_TITLE = 'College Transparency System';
@@ -38,7 +41,11 @@ const everyone = [
   { segment: 'facility', title: 'Facility Booking', icon: <BusinessCenterIcon /> },
   { segment: 'facility-bookings', title: 'Bookings', icon: <EventAvailableIcon /> },
   { segment: 'application-page', title: 'Applications Portal', icon: <AssignmentIcon /> },
+  { segment: 'budgets', title: 'Budgets', icon: <AccountBalanceWalletIcon /> },
+  { segment: 'integrity', title: 'Academic Integrity', icon: <GavelIcon /> },
 ];
+
+const health = (title) => ({ segment: 'health', title, icon: <LocalHospitalIcon /> });
 
 const byRole = {
   admin: [
@@ -46,14 +53,17 @@ const byRole = {
     { segment: 'pending-request', title: 'Pending Requests', icon: <HowToRegIcon /> },
     { segment: 'admin-election', title: 'Manage Elections', icon: <SettingsIcon /> },
   ],
-  student: [],
+  student: [health('Health and Leave')],
   faculty: [],
-  doctor: [],
+  doctor: [health('Health Concerns')],
 };
+
+// health data is private: among the faculty only a class coordinator has a page for it
+const forCoordinator = (user) => (user?.role === 'faculty' && user.coordinatorOf?.department ? [health('Medical Leave')] : []);
 
 function App() {
   const user = useSelector((state) => state.auth.userData);
-  const navigation = [...everyone, ...(byRole[user?.role] || [])];
+  const navigation = [...everyone, ...(byRole[user?.role] || []), ...forCoordinator(user)];
   const narrow = useMediaQuery('(max-width:600px)');
   const branding = { title: narrow ? SHORT_TITLE : FULL_TITLE };
 

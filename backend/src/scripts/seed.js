@@ -2,13 +2,17 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import connectDB from '../database/database.js';
-import { DEMO_LOGINS, DEMO_PASSWORD, ensureAdmin, rebuildSampleCollege } from './sampleCollege.js';
+import { DEMO_LOGINS, DEMO_PASSWORD, ensureAdmin, ensureDoctor, rebuildSampleCollege } from './sampleCollege.js';
 
 const seed = async () => {
     await connectDB();
 
     if (await ensureAdmin()) {
         console.log('Admin account created from ADMIN_EMAIL');
+    }
+
+    if (await ensureDoctor()) {
+        console.log('Doctor account created from DOCTOR_EMAIL');
     }
 
     const { users } = await rebuildSampleCollege();

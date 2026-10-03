@@ -48,7 +48,29 @@ const readDate = (value, label, { required = false } = {}) => {
     return date;
 };
 
+// An amount of money: a number, or a form's text of one, above zero and with at most
+// two decimals. Anything else is refused.
+const MONEY_PATTERN = /^(0|[1-9]\d*)(\.\d+)?$/;
+
+const readMoney = (value, label) => {
+    const text = typeof value === 'number' ? String(value) : (typeof value === 'string' ? value.trim() : '');
+    const amount = MONEY_PATTERN.test(text) ? Number(text) : NaN;
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        throw new ApiError(400, `${label} must be a number above 0`);
+    }
+
+    // counted in the text, before the number could round the extra digits away
+    const decimals = (text.split('.')[1] || '').length;
+
+    if (decimals > 2) {
+        throw new ApiError(400, `${label} can have at most two decimals`);
+    }
+
+    return amount;
+};
+
 // a checkbox: JSON sends true, a multipart form sends "true"
 const readBoolean = (value) => value === true || value === 'true';
 
-export { readText, readChoice, readDate, readBoolean }
+export { readText, readChoice, readDate, readBoolean, readMoney }

@@ -8,6 +8,7 @@ import { readChoice, readText } from '../utils/input.js';
 import { assertReach } from '../utils/reach.js';
 import { notify } from '../utils/notices.js';
 import { isValidObjectId } from '../utils/objectId.js';
+import { collegeToday } from '../utils/collegeTime.js';
 
 const DUPLICATE_KEY = 11000;
 const PURPOSE_MAX = 500;
@@ -19,8 +20,6 @@ const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const OVERLAP = "This time overlaps an approved booking";
 const ALREADY_DECIDED = "This request has already been decided";
-
-const today = () => new Date().toISOString().slice(0, 10);
 
 // a real calendar day written as YYYY-MM-DD; 2026-02-30 is not one
 const readDay = (value) => {
@@ -139,7 +138,8 @@ const requestBooking = asyncHandler(async (req, res) => {
         throw new ApiError(400, "The end time must be after the start time");
     }
 
-    if (date < today()) {
+    // the day it is at the college decides what is past
+    if (date < collegeToday()) {
         throw new ApiError(400, "The date cannot be in the past");
     }
 
