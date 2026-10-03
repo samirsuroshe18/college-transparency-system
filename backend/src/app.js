@@ -1,76 +1,54 @@
 import express from "express";
-import cors from "cors";
+import cors from 'cors';
 import cookieParser from "cookie-parser";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-import path from "path";
-import errorHandler from "./utils/errorHandler.js";
+import ApiError from './utils/ApiError.js';
+import ApiResponse from './utils/ApiResponse.js';
+import userRouter from './routes/user.routes.js';
+import verifyRouter from './routes/verify.routes.js';
+import noticeRouter from './routes/notice.routes.js';
+import profileRouter from './routes/profile.routes.js';
+import dashboardRouter from './routes/dashboard.routes.js';
 
 const app = express();
 
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const staticPath = path.join(__dirname, '../public');
-
-// app.use(cors({ origin: ["http://localhost:5173", process.env.CORS_ORIGIN], credentials: true }));
-app.use(
-    cors(
-        {
-            origin: 'http://localhost:5173', // Allow frontend origin
-            methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
-            allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
-            credentials: true, // Allow cookies/auth headers if needed
-        }
-    )
-);
+// allow the frontend origin to send the auth cookies
+app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(staticPath));
 app.use(cookieParser());
 
-//routes import
-import userRouter from "./routes/user.routes.js";
-import complaintRoutes from "./routes/complaintModule/complaint.routes.js";
+app.get("/api/v1/health", (req, res) => {
+    return res.status(200).json(new ApiResponse(200, { status: 'ok' }, "OK"));
+});
 
-import facilityRouter from "./routes/facilityBookingModule/facility.routes.js";
-import bookingRouter from "./routes/facilityBookingModule/booking.routes.js";
-import voteRouter from "./routes/electionModule/vote.routes.js";
-import adminElectionRouter from "./routes/electionModule/election.routes.js";
-import candidateRouter from "./routes/electionModule/candidate.routes.js";
-import candidateApplicationRouter from "./routes/electionModule/candidateApplication.routes.js";
-import voteRoutes from "./routes/electionModule/vote.routes.js";
-import cheatingRoutes from "./routes/cheatingModule/cheating.routes.js"
-import applicationRoutes from "./routes/applicationModule/application.routes.js";
-import healthleaveRouter from "./routes/healthleave.routes.js";
-import budgetRoutes from "./routes/BudgetSponsoship/budgetRoutes.js"
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/verify", verifyRouter);
+app.use("/api/v1/notices", noticeRouter);
+app.use("/api/v1/profiles", profileRouter);
+app.use("/api/v1/dashboard", dashboardRouter);
 
-//routes declaration
-app.use("/api/v1/user", userRouter);
+app.use((req, res, next) => {
+    next(new ApiError(404, "Route not found"));
+});
 
-app.use("/api/v1/facility", facilityRouter);
-app.use("/api/v1/booking", bookingRouter);
+// Custom error handling
+app.use((err, req, res, next) => {
+    const isValidationError = err.name === 'ValidationError';
+    const statusCode = err.statusCode || (isValidationError ? 400 : 500);
+    // an unexpected failure can carry database or stack details, so only messages
+    // written for the client (ApiError) or for a 4xx are sent back
+    const isUnexpected = statusCode >= 500 && !(err instanceof ApiError);
+    const message = isUnexpected ? "Internal server error" : (err.message || "Internal server error");
 
+    if (statusCode >= 500) {
+        console.log(err);
+    }
 
-app.use("/api/v1/application", applicationRoutes);
-app.use("/api/v1/cheating", cheatingRoutes);
+    return res.status(statusCode).json({
+        statusCode: statusCode,
+        message: message,
+        success: false
+    });
+})
 
-//Routing of election
-app.use("/api/v1/votes", voteRouter);
-app.use("/api/v1/admin/elections", adminElectionRouter);
-app.use("/api/v1/candidates", candidateRouter);
-app.use("/api/v1/applications", candidateApplicationRouter);
-app.use("/api/v1", voteRoutes);
-app.use("/api/v1/application", applicationRoutes);
-app.use("/api/v1/cheating", cheatingRoutes);
-app.use("/api/v1/healthleave", healthleaveRouter);
-app.use("/api/v1/budgets",budgetRoutes);
-app.use("/api/v1/complaints", complaintRoutes);
-
-app.use(errorHandler);
-
-
-
-
-
-export default app;
+export default app
