@@ -9,6 +9,7 @@ import noticeRouter from './routes/notice.routes.js';
 import profileRouter from './routes/profile.routes.js';
 import dashboardRouter from './routes/dashboard.routes.js';
 import electionRouter from './routes/election.routes.js';
+import complaintRouter from './routes/complaint.routes.js';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use("/api/v1/notices", noticeRouter);
 app.use("/api/v1/profiles", profileRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/elections", electionRouter);
+app.use("/api/v1/complaints", complaintRouter);
 
 app.use((req, res, next) => {
     next(new ApiError(404, "Route not found"));
