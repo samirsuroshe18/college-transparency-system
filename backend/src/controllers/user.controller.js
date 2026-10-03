@@ -1,9 +1,41 @@
-import catchAsync from '../utils/catchAsync.js';
+import asyncHandler from '../utils/asynchandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { User } from '../models/user.model.js';
-import { uploadOnCloudinary } from '../utils/cloudinary.js';
-import mongoose from 'mongoose';
+import mailSender from '../utils/mailSender.js';
+import { endSessions } from '../utils/sessions.js';
+import { isDemoEmail } from '../utils/demo.js';
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 6;
+const NAME_MAX = 80;
+const DUPLICATE_KEY = 11000;
+
+// the cookie must only require https in production, otherwise it is dropped on http://localhost
+const cookieOptions = () => ({
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+});
+
+const normalizeEmail = (email) => (typeof email === 'string' ? email.trim().toLowerCase() : '');
+
+// Reads the name from a request body; anything but text is refused
+const readName = (value) => {
+    if (value === undefined || value === null) return '';
+
+    if (typeof value !== 'string') {
+        throw new ApiError(400, "Name must be text");
+    }
+
+    const name = value.trim();
+
+    if (name.length > NAME_MAX) {
+        throw new ApiError(400, `Name must be at most ${NAME_MAX} characters`);
+    }
+
+    return name;
+};
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -12,387 +44,146 @@ const generateAccessAndRefreshToken = async (userId) => {
         const refreshToken = user.generateRefreshToken();
 
         user.refreshToken = refreshToken;
-
-        // when we use save() method is used then all the fields are neccesary so to avoid that we have to pass an object with property {validatBeforeSave:false}
         await user.save({ validateBeforeSave: false });
 
         return { accessToken, refreshToken }
     } catch (error) {
         throw new ApiError(500, "Something went wrong while generating refresh and access token");
     }
-};
+}
 
-const googleLogin = catchAsync(async (req, res) => {
-    const { name, email, profilePic } = req.body;
+const registerUser = asyncHandler(async (req, res) => {
+    const { password } = req.body;
+    const name = readName(req.body.name);
+    const email = normalizeEmail(req.body.email);
 
-    if (!name || !email || !profilePic) {
-        throw new ApiError(400, "Please provide all the required fields");
+    if (!name || !email || !password) {
+        throw new ApiError(400, "Name, email and password are required");
     }
 
-    if (!email.endsWith("@gmail.com")) {
-        throw new ApiError(400, "Access Denied");
+    if (!EMAIL_PATTERN.test(email)) {
+        throw new ApiError(400, "Enter a valid email address");
+    }
+
+    if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+        throw new ApiError(400, "Password must be at least 6 characters");
+    }
+
+    // addresses of the sample college are made by the server only
+    if (isDemoEmail(email)) {
+        throw new ApiError(400, "This email address cannot be used");
     }
 
     const existedUser = await User.findOne({ email });
 
-    if (!existedUser) {
-        const loggedInUser = await User.create({
-            name,
-            email,
-            profilePic,
-        });
+    if (existedUser) {
+        throw new ApiError(409, 'An account with this email already exists');
+    }
 
-        if (!loggedInUser) {
-            throw new ApiError(500, "Something went wrong");
+    let user;
+    try {
+        // role, profile status and duties are never taken from a sign-up
+        user = await User.create({ name, email, password });
+    } catch (error) {
+        // two sign-ups can pass the check above at the same moment; the unique index decides
+        if (error.code === DUPLICATE_KEY) {
+            throw new ApiError(409, 'An account with this email already exists');
+        }
+        throw error;
+    }
+
+    const mailResponse = await mailSender(email, user._id, "VERIFY");
+
+    if (!mailResponse) {
+        // logging in with an unverified account sends a fresh link
+        throw new ApiError(500, "Account created, but the verification email could not be sent. Log in to get a new link.");
+    }
+
+    return res.status(201).json(
+        new ApiResponse(201, {}, "Verification email sent. Please verify within 10 minutes.")
+    );
+});
+
+const loginUser = asyncHandler(async (req, res) => {
+    const email = normalizeEmail(req.body.email);
+    const { password } = req.body;
+
+    if (!email || !password) {
+        throw new ApiError(400, "Email and password are required");
+    }
+
+    const user = await User.findOne({ email });
+
+    // the same answer for an unknown email and a wrong password, so accounts cannot be probed
+    if (!user || !(await user.isPasswordCorrect(String(password)))) {
+        throw new ApiError(401, "Invalid email or password");
+    }
+
+    if (!user.isVerified) {
+        const mailResponse = await mailSender(email, user._id, "VERIFY");
+
+        if (!mailResponse) {
+            throw new ApiError(500, "Email not verified, and a new verification link could not be sent. Please try again later.");
         }
 
-        const { accessToken, refreshToken } = await generateAccessAndRefreshToken(loggedInUser._id);
-
-        //option object is created beacause we dont want to modified the cookie to front side
-        const option = {
-            httpOnly: process.env.HTTP_ONLY === 'true',
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: isRemember ? Number(process.env.COOKIE_MAX_AGE) : undefined,
-            sameSite: process.env.SAME_SITE === 'true' ? 'Strict' : 'Lax',
-        };
-
-        return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
-            new ApiResponse(200, { loggedInUser, accessToken, refreshToken }, "User logged in sucessully")
-        );
+        throw new ApiError(403, "Email not verified. A new verification link has been sent.");
     }
 
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(existedUser._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-    //option object is created beacause we dont want to modified the cookie to front side
-    const option = {
-        httpOnly: process.env.HTTP_ONLY === 'true',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: isRemember ? Number(process.env.COOKIE_MAX_AGE) : undefined,
-        sameSite: process.env.SAME_SITE === 'true' ? 'Strict' : 'Lax',
-    };
+    const loggedInUser = await User.findById(user._id);
 
-    return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
-        new ApiResponse(200, { existedUser, accessToken, refreshToken }, "User logged in sucessully")
-    );
+    return res.status(200)
+        .cookie('accessToken', accessToken, cookieOptions())
+        .cookie('refreshToken', refreshToken, cookieOptions())
+        .json(new ApiResponse(200, { user: loggedInUser }, "Logged in"));
 });
 
-const logoutUser = catchAsync(async (req, res) => {
+const logoutUser = asyncHandler(async (req, res) => {
 
-    return res.status(200).clearCookie('accessToken').status(200).json(
-        new ApiResponse(200, req.user, "User logged out successfully")
-    );
+    // the demo account is used by many visitors at once; one of them leaving must not
+    // sign out the others, so only this browser's cookies are cleared
+    if (!req.user.isDemo) {
+        await endSessions(req.user._id);
+    }
+
+    return res.status(200)
+        .clearCookie("accessToken", cookieOptions())
+        .clearCookie("refreshToken", cookieOptions())
+        .json(new ApiResponse(200, {}, "Logged out"));
 });
 
-const getCurrentUser = catchAsync(async (req, res) => {
+const getMe = asyncHandler(async (req, res) => {
     return res.status(200).json(
-        new ApiResponse(200, req.user, "User session is Active")
+        new ApiResponse(200, { user: req.user }, "Current user")
     );
 });
 
-const addStudentProfile = catchAsync(async (req, res) => {
-    const {
-        name, email, studentId, department, classDivision, rollNumber,
-        admissionType, admissionDate, currentYear, passingYear, hostelStatus,
-        address, bloodGroup, dateOfBirth, gender, phoneNumber, emergencyContact
-    } = req.body;
+const forgotPassword = asyncHandler(async (req, res) => {
+    const email = normalizeEmail(req.body.email);
 
-    const file = req.file.path;
-
-    const path = await uploadOnCloudinary(file);
-
-    if (!path?.url) {
-        throw new ApiError(500, "Failed to upload company logo");
+    if (!email) {
+        throw new ApiError(400, "Email is required");
     }
 
-    // Update Student Profile
-    const student = await User.findByIdAndUpdate(
-        req.user._id,
-        {
-            $set: {
-                name,
-                email,
-                studentId,
-                department,
-                classDivision,
-                rollNumber,
-                admissionType,
-                admissionDate,
-                currentYear,
-                passingYear,
-                hostelStatus,
-                address,
-                bloodGroup,
-                dateOfBirth,
-                gender,
-                phoneNumber,
-                emergencyContact: JSON.parse(emergencyContact),
-                idProof: path?.url || "",
-                profileStatus: "Pending",
-                role: "student"
-            }
-        },
-        { new: true }
-    );
+    const user = await User.findOne({ email });
 
-    if (!student) {
-        throw new ApiError(500, "Something went wrong");
+    // the demo account has no mailbox, and its password must stay the published one
+    if (user && !user.isDemo) {
+        await mailSender(email, user._id, "RESET");
     }
 
+    // the same answer either way, so the form cannot be used to find registered emails
     return res.status(200).json(
-        new ApiResponse(200, student, "Form submited successfully")
+        new ApiResponse(200, {}, "If that email is registered, a reset link has been sent.")
     );
 });
-
-const addFacultyProfile = catchAsync(async (req, res) => {
-    const { phoneNumber, joinDate, qualification, emergencyContact, address, department, designation, dateOfBirth, gender, isBoardMember, } = req.body;
-
-    const file = req.file.path;
-
-    const path = await uploadOnCloudinary(file);
-
-    if (!path?.url) {
-        throw new ApiError(500, "Failed to upload company logo");
-    }
-
-    const faculty = await User.findByIdAndUpdate(
-        req.user._id,
-        {
-            $set: {
-                idProof: path?.url,
-                phoneNumber,
-                dateOfBirth,
-                gender,
-                isBoardMember,
-                joiningDate: joinDate,
-                qualification,
-                emergencyContact: JSON.parse(emergencyContact),
-                address,
-                department,
-                designation,
-                profileStatus: "Pending",
-                role: "faculty"
-            }
-        },
-        { new: true }
-    )
-
-    if (!faculty) {
-        throw new ApiError(500, "Something went wrong");
-    }
-
-    return res.status(200).json(
-        new ApiResponse(200, faculty, "Form submited successfully")
-    );
-});
-
-// Get all pending student profiles
-const getPendingStudentProfiles = catchAsync(async (req, res) => {
-    const pendingStudents = await User.find({ role: "student", profileStatus: "Pending" });
-
-    return res.status(200).json(
-        new ApiResponse(200, pendingStudents, "Facility fetched successfully.")
-    )
-});
-
-// Get all rejected student profiles
-const getRejectedStudentProfiles = async (req, res) => {
-    try {
-        const rejectedStudents = await User.find({ role: "student", profileStatus: "Rejected" });
-        res.status(200).json(rejectedStudents);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching rejected student profiles", error });
-    }
-};
-
-// Get a specific approved student profile
-const getApproveStudentProfile = async (req, res) => {
-    try {
-        const student = await User.findOne({ _id: req.params.userId, role: "student", profileStatus: "Approved" });
-        if (!student) return res.status(404).json({ message: "Student not found or not Approved" });
-
-        res.status(200).json(student);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching approved student profile", error });
-    }
-};
-
-// Approve a student profile
-const approveStudentProfile = catchAsync(async (req, res) => {
-    const { id } = req.body;
-    const userId = mongoose.Types.ObjectId.createFromHexString(id);
-
-    const updatedStudent = await User.findByIdAndUpdate(
-        userId,
-        { profileStatus: "Approved" },
-        { new: true }
-    );
-
-    if (!updatedStudent) {
-        throw new ApiError(404, "student not found");
-    }
-
-    return res.status(200).json(
-        new ApiResponse(200, updatedStudent, "Student profile approved successfully")
-    );
-});
-
-// Reject a student profile
-const rejectStudentProfile = catchAsync(async (req, res) => {
-    const { id, rejectionReason } = req.body;
-
-
-
-    if (!rejectionReason) {
-        return res.status(400).json({ message: "Rejection reason is required" });
-    }
-
-    const updatedStudent = await User.findByIdAndUpdate(
-        userId,
-        { profileStatus: "Rejected", rejectionReason },
-        { new: true }
-    );
-
-    if (!updatedStudent) {
-        throw new ApiError(404, "student not found");
-    }
-
-    return res.status(200).json(
-        new ApiResponse(200, updatedStudent, "Student profile rejected successfully")
-    );
-});
-
-// Get all pending faculty profiles
-const getPendingFacultyProfiles = catchAsync(async (req, res) => {
-    const pendingFaculty = await User.find({ role: "faculty", profileStatus: "Pending" });
-    return res.status(200).json(
-        new ApiResponse(200, pendingFaculty, "Pending faculty fetched successfully.")
-    )
-});
-
-// Get all rejected faculty profiles
-const getRejectedFacultyProfiles = async (req, res) => {
-    try {
-        const rejectedFaculty = await User.find({ role: "faculty", status: "Rejected" });
-        res.status(200).json(rejectedFaculty);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching rejected faculty profiles", error });
-    }
-};
-
-// Get a specific approved faculty profile
-const getApproveFacultyProfile = async (req, res) => {
-    try {
-        const faculty = await User.findOne({ _id: req.params.userId, role: "faculty", status: "Approved" });
-        if (!faculty) return res.status(404).json({ message: "Faculty not found or not approved" });
-
-        res.status(200).json(faculty);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching approved faculty profile", error });
-    }
-};
-
-// Approve a faculty profile
-const approveFacultyProfile = catchAsync(async (req, res) => {
-    const { id, rejectionReason } = req.body;
-    const userId = mongoose.Types.ObjectId.createFromHexString(id);
-
-    const updatedFaculty = await User.findByIdAndUpdate(userId, { profileStatus: "Approved" }, { new: true });
-    if (!updatedFaculty) {
-        throw new ApiError(404, "Faculty not found");
-    }
-
-    return res.status(200).json(
-        new ApiResponse(200, updatedFaculty, "Faculty profile approved successfully")
-    );
-});
-
-// Reject a faculty profile
-const rejectFacultyProfile = catchAsync(async (req, res) => {
-    const { id, rejectionReason } = req.body;
-    const userId = mongoose.Types.ObjectId.createFromHexString(id);
-
-    if (!rejectionReason) {
-        return res.status(400).json({ message: "Rejection reason is required" });
-    }
-
-    const updatedFaculty = await User.findByIdAndUpdate(
-        userId,
-        { profileStatus: "Rejected", rejectionReason },
-        { new: true }
-    );
-
-    if (!updatedFaculty) {
-        throw new ApiError(404, "Faculty not found");
-    }
-
-    return res.status(200).json(
-        new ApiResponse(200, updatedFaculty, "Faculty profile rejected successfully")
-    );
-});
-
-const getUserById = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const user = await User.findById(id).select("-password");
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            data: user
-        });
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Error while fetching user",
-            error: error.message
-        });
-    }
-}
-
-const getStudentByRollNumber = catchAsync(async (req, res) => {
-    const { rollNumber } = req.params; // Get roll number from request params
-
-    if (!rollNumber) {
-        throw new ApiError(400, "Roll number is required");
-    }
-
-    const student = await User.findOne({ rollNumber, role: "student" }, "name classDivision currentYear");
-
-    if (!student) {
-        throw new ApiError(404, "Student not found");
-    }
-
-    return res.status(200).json(
-        new ApiResponse(200, student, "Student details fetched successfully")
-    );
-});
-
 
 
 export {
-    googleLogin,
+    registerUser,
+    loginUser,
     logoutUser,
-    getCurrentUser,
-    addStudentProfile,
-    addFacultyProfile,
-    getPendingStudentProfiles,
-    getRejectedStudentProfiles,
-    getApproveStudentProfile,
-    approveStudentProfile,
-    rejectStudentProfile,
-    getPendingFacultyProfiles,
-    getRejectedFacultyProfiles,
-    getApproveFacultyProfile,
-    approveFacultyProfile,
-    rejectFacultyProfile,
-    getUserById,
-    getStudentByRollNumber,
-
+    getMe,
+    forgotPassword
 }

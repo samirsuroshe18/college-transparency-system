@@ -1,23 +1,18 @@
 import { Router } from "express";
-import { addFacultyProfile, addStudentProfile, approveFacultyProfile, approveStudentProfile, getCurrentUser, getPendingFacultyProfiles, getPendingStudentProfiles, googleLogin, logoutUser, rejectFacultyProfile, rejectStudentProfile, getUserById, getStudentByRollNumber } from "../controllers/user.controller.js";
-import { verifyJwt } from "../middlewares/auth.middleware.js";
-import { upload } from "../middlewares/multer.middleware.js";
+import { verifyJwt } from '../middlewares/auth.middleware.js'
+import { accountLimiter } from '../middlewares/rateLimit.middleware.js'
+import { forgotPassword, getMe, loginUser, logoutUser, registerUser } from "../controllers/user.controller.js";
 
 const router = Router();
 
-router.route("/google-login").post(googleLogin);
-router.route("/current-user").get(verifyJwt, getCurrentUser);
-router.route("/logout").get(verifyJwt, logoutUser);
-router.route("/add-student-profile").post(verifyJwt, upload.single("proofImage"), addStudentProfile);
-router.route("/add-faculty-profile").post(verifyJwt, upload.single("proofImage"), addFacultyProfile);
-router.route("/get-pending-students").get(verifyJwt, getPendingStudentProfiles);
-router.route("/get-pending-faculty").get(verifyJwt, getPendingFacultyProfiles);
-router.route("/student-approve").post(verifyJwt, approveStudentProfile);
-router.route("/student-reject").post(verifyJwt, rejectStudentProfile);
+// these three can send email or test a password, so each visitor gets a limited number of tries
+router.route('/register').post(accountLimiter, registerUser);
+router.route('/login').post(accountLimiter, loginUser);
+router.route('/forgot-password').post(accountLimiter, forgotPassword);
 
-router.route("/faculty-approve").post(verifyJwt, approveFacultyProfile);
-router.route("/faculty-reject").post(verifyJwt, rejectFacultyProfile);
-router.get("/student/:rollNumber", getStudentByRollNumber);
-router.route("/user/:id").get(verifyJwt, getUserById);
+//Secure routes
+router.route('/logout').get(verifyJwt, logoutUser);
+router.route('/me').get(verifyJwt, getMe);
+
 
 export default router;

@@ -1,64 +1,55 @@
-import React, { useEffect, useState } from "react";
-import { Outlet, useNavigate } from "react-router";
-import { DashboardLayout } from "@toolpad/core/DashboardLayout";
+import { Outlet, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { DashboardLayout, ThemeSwitcher } from "@toolpad/core/DashboardLayout";
 import { PageContainer } from "@toolpad/core/PageContainer";
-import LinearProgress from "@mui/material/LinearProgress";
-import { useDispatch } from "react-redux";
-import { handleAxiosError } from "../../utils/handleAxiosError";
-import { getCurrentUser } from "../../api/authApi";
-import { showNotificationWithTimeout } from "../../redux/slices/notificationSlice";
-import { currentUser, login } from "../../redux/slices/authSlice";
+import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { logout as logoutRequest } from "../../api/authApi";
+import { logout } from "../../redux/slices/authSlice";
+import NoticeBell from "./NoticeBell";
 import SnackBar from "../../utils/SnackBar";
 
-export default function Layout() {
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+// right side of the top bar: notices, theme, who is logged in, logout
+const ToolbarActions = () => {
+  const user = useSelector((state) => state.auth.userData);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  // Call API when the page is loading
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await getCurrentUser(setLoading, dispatch);
-        dispatch(currentUser(res.data));
-        
-        // Check if profile is not filled, then navigate to select role screen
-        if (res.data.role === "admin") {
-          navigate('/');
-        }else if (res.data.profileStatus === "NotFilled") {
-          navigate('/select-role-screen');
-        }else if (res.data.profileStatus === "Pending") {
-          navigate('/profile-pending');
-        }else if (res.data.profileStatus === "Rejected") {
-          navigate('/profile-rejected');
-        }
-      } catch (error) {
-        setLoading(false);
-        dispatch(
-          showNotificationWithTimeout({
-            show: true,
-            type: "error",
-            message: handleAxiosError(error),
-          })
-        );
-        navigate("/login");
-      }
-    };
-
-    fetchData();
-  }, [dispatch, navigate]); // Added `dispatch` and `navigate` to the dependency array to avoid warnings
-
-  if (loading) {
-    return (
-      <div style={{ width: "100%" }}>
-        <LinearProgress />
-      </div>
-    );
-  }
+  const handleLogout = async () => {
+    // the session is over for this browser whether or not the server could be told
+    await logoutRequest().catch(() => {});
+    dispatch(logout());
+    navigate("/login", { replace: true });
+  };
 
   return (
+    <div className="flex items-center gap-1">
+      <NoticeBell />
+      <ThemeSwitcher />
+      <span className="hidden md:inline text-sm opacity-80 mx-2 max-w-[14rem] truncate" title={user?.email}>
+        {user?.name} · {user?.role}
+      </span>
+      {/* on a phone the label would push the bar onto a second row */}
+      <span className="hidden md:inline-flex">
+        <Button onClick={handleLogout} size="small" variant="outlined" startIcon={<LogoutIcon />}>
+          Logout
+        </Button>
+      </span>
+      <span className="md:hidden">
+        <IconButton onClick={handleLogout} aria-label="Logout">
+          <LogoutIcon />
+        </IconButton>
+      </span>
+    </div>
+  );
+};
+
+// The frame around every page of the system: side menu, top bar, page area
+export default function Layout() {
+  return (
     <div>
-      <DashboardLayout>
+      <DashboardLayout slots={{ toolbarActions: ToolbarActions }}>
         <PageContainer>
           <Outlet />
         </PageContainer>

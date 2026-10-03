@@ -50,8 +50,9 @@ on sick leave). An admin sets both.
 
 Login, logout, forgot password and reset password work as usual. Sessions use
 an httpOnly cookie. Resetting a password ends existing sessions. Sign-up,
-login and password reset are limited to 30 requests per visitor in 15
-minutes.
+login and password reset are limited to 30 requests per visitor and 10 per
+email address in 15 minutes. Profile forms are limited to 10 per user in the
+same time.
 
 Email is sent through the Brevo HTTPS API when `BREVO_API_KEY` is set, and
 through SMTP otherwise.
@@ -62,6 +63,12 @@ The login page has four buttons: student, faculty, admin and doctor. Each
 logs in to a ready-made account under `@campus.demo`. For these accounts,
 logging out only ends that visitor's own session, and the password cannot be
 reset.
+
+The demo admin is a public account, so it manages the sample college only. It
+does not see real sign-ups and cannot approve, reject or give duties to a
+real account; those are decided by the admin created from `ADMIN_EMAIL`.
+Nobody can sign up with an `@campus.demo` address, and roll numbers and
+faculty IDs that start with `DEMO-` are kept for the sample college.
 
 ## Modules
 
@@ -164,7 +171,9 @@ stated otherwise; that openness is the point of the system.
 - Files go to Cloudinary. Images (JPEG, PNG, WebP) and PDF, up to 2 MB.
 - Only approved, logged-in users can upload, and every attachment is
   optional.
-- If Cloudinary is not configured, forms work without attachments and say so.
+- If Cloudinary is not configured or a file cannot be stored, the form is
+  still saved and the answer says the file was left out.
+- The one upload before approval is the ID proof on the profile form.
 
 ## Demo data
 
@@ -176,7 +185,8 @@ complaints with votes; facilities with bookings; applications, budgets,
 integrity records and health concerns).
 
 Every time the server starts, everything that belongs to the sample college
-is removed and created again. Accounts made by real sign-ups, and what those
+is removed and created again, with the same account ids, so a visitor who is
+logged in stays logged in. If the rebuild fails the server still starts. Accounts made by real sign-ups, and what those
 users created, are kept, except their votes and comments on sample items,
 which go with the items.
 

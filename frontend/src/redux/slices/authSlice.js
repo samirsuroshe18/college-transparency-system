@@ -1,24 +1,29 @@
-import { createSlice } from "@reduxjs/toolkit"; // ✅ Make sure this is present
+import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
     status: false,
-    userData: null, // ✅ Ensure this is initially null
+    userData: null,
 };
 
+// who is logged in; pages read state.auth.userData
 const authSlice = createSlice({
     name: "auth",
     initialState,
     reducers: {
         login: (state, action) => {
             state.status = true;
-            state.userData = action.payload || {}; // ✅ Ensure fallback object
+            state.userData = action.payload || {};
         },
         currentUser: (state, action) => {
             state.status = true;
-            state.userData = action.payload || {}; // ✅ Ensure fallback object
+            state.userData = action.payload || {};
+        },
+        logout: (state) => {
+            state.status = false;
+            state.userData = null;
         },
     }
 });
 
-export const { login, currentUser } = authSlice.actions;
+export const { login, currentUser, logout } = authSlice.actions;
 export default authSlice.reducer;

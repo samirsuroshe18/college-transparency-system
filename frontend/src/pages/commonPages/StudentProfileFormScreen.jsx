@@ -15,11 +15,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { addStudentProfile } from "../../api/authApi";
-import { currentUser } from "../../redux/slices/authSlice";
 import { useNavigate } from "react-router-dom";
-import { showNotificationWithTimeout } from "../../redux/slices/notificationSlice";
-import { handleAxiosError } from "../../utils/handleAxiosError";
+import { submitStudentProfile } from "../../api/authApi";
+import { errorMessage } from "../../api/client";
+import { currentUser } from "../../redux/slices/authSlice";
+import { DEPARTMENTS, DIVISIONS, FILE_ACCEPT, FILE_HINT, YEARS, fileProblem } from "../../lib/college";
 
 const FormSection = ({ title, children }) => (
   <div className="bg-[#1a1a1d]/50 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-amber-500/10 space-y-4 mb-6 hover:border-amber-500/20 transition-all duration-300">
@@ -41,6 +41,7 @@ const InputField = ({ icon: Icon, label, error, ...props }) => (
       </div>
       <input
         {...props}
+        aria-label={label}
         className={`w-full pl-10 pr-4 py-2.5 rounded-xl focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200 ${
           props.readOnly
             ? "bg-[#1a1a1d] text-gray-400 cursor-not-allowed border border-gray-700"
@@ -63,6 +64,7 @@ const SelectField = ({ icon: Icon, label, children, error, ...props }) => (
       </div>
       <select
         {...props}
+        aria-label={label}
         className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a1a1d] text-white border border-amber-500/20 hover:border-amber-500/40 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200"
       >
         {children}
@@ -72,33 +74,41 @@ const SelectField = ({ icon: Icon, label, children, error, ...props }) => (
   </div>
 );
 
+// what the server needs before it accepts the form
+const REQUIRED = {
+  rollNumber: "Roll number is required",
+  department: "Department is required",
+  classDivision: "Division is required",
+  currentYear: "Current year is required",
+  phoneNumber: "Phone number is required",
+};
+
+const emptyForm = () => ({
+  dateOfBirth: "",
+  gender: "",
+  phoneNumber: "",
+  rollNumber: "",
+  department: "",
+  classDivision: "",
+  admissionType: "regular",
+  admissionDate: "",
+  currentYear: "",
+  passingYear: "",
+  hostelStatus: "Hostel",
+  address: "",
+  emergencyContact: { name: "", relation: "", contact: "" },
+  bloodGroup: "",
+});
+
 const StudentProfileFormScreen = () => {
   const user = useSelector((state) => state.auth.userData);
 
-  const [formData, setFormData] = useState({
-    name: user.name || "John Doe",
-    email: user.email || "john.doe@example.com",
-    profilePic: user.profilePic || null,
-    dateOfBirth: "",
-    gender: "",
-    phoneNumber: "",
-    rollNumber: "",
-    department: "",
-    classDivision: "",
-    admissionType: "regular",
-    admissionDate: "",
-    currentYear: "",
-    passingYear: "",
-    hostelStatus: "Hostel",
-    address: "",
-    emergencyContact: { name: "", relation: "", contact: "" },
-    bloodGroup: "",
-    idProof: null,
-  });
-  const [imagePreview, setImagePreview] = useState(null);
+  const [formData, setFormData] = useState(emptyForm);
+  const [idProof, setIdProof] = useState(null);
   const [errors, setErrors] = useState({});
-  const dispatch = useDispatch();
+  const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -118,52 +128,52 @@ const StudentProfileFormScreen = () => {
     }
   };
 
-  const handleImageChange = (e, field) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5000000) {
-        setErrors((prev) => ({
-          ...prev,
-          [field]: "File size should be less than 5MB",
-        }));
-        return;
-      }
-      setFormData((prev) => ({ ...prev, [field]: file }));
-      if (field === "profilePic") {
-        const reader = new FileReader();
-        reader.onloadend = () => setImagePreview(reader.result);
-        reader.readAsDataURL(file);
-      }
-      // Clear error when valid file is uploaded
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
+  const handleFileChange = (e) => {
+    const file = e.target.files[0] || null;
+    const problem = fileProblem(file);
+
+    setErrors((prev) => ({ ...prev, idProof: problem }));
+    setIdProof(problem ? null : file);
+    if (problem) e.target.value = "";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
+    setFormError("");
+
+    const missing = {};
+    for (const [field, message] of Object.entries(REQUIRED)) {
+      if (!String(formData[field]).trim()) missing[field] = message;
+    }
+    if (Object.keys(missing).length > 0) {
+      setErrors((prev) => ({ ...prev, ...missing }));
+      setFormError("Please fill in the fields marked below.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const res = await addStudentProfile(formData, setLoading, dispatch);
-      dispatch(currentUser(res.data));
+      const res = await submitStudentProfile(formData, idProof);
+      dispatch(currentUser(res.data.user));
       navigate("/profile-pending");
     } catch (error) {
-      setLoading(false);
-      dispatch(
-        showNotificationWithTimeout({
-          show: true,
-          type: "error",
-          message: handleAxiosError(error),
-        })
-      );
+      setFormError(errorMessage(error));
     } finally {
       setLoading(false);
     }
   };
 
+  const resetForm = () => {
+    setFormData(emptyForm());
+    setIdProof(null);
+    setErrors({});
+    setFormError("");
+  };
+
   return (
     <div className="min-h-screen bg-[#131314] bg-gradient-to-br from-[#131314] to-[#1a1a1d] text-white p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-amber-500 to-amber-300 bg-clip-text text-transparent">
               Student Profile Form
@@ -176,53 +186,21 @@ const StudentProfileFormScreen = () => {
           <FormSection
             title={
               <>
-                <User className="inline-block" /> Profile Picture
-              </>
-            }
-          >
-            <div className="flex flex-col items-center gap-6">
-              <div className="relative group flex justify-center">
-                <img
-                  src={user.profilePic}
-                  alt="Profile Preview"
-                  className="w-32 h-32 rounded-2xl border-2 border-amber-500/50 object-cover transition-all duration-300 group-hover:border-amber-500"
-                />
-              </div>
-            </div>
-          </FormSection>
-
-          <FormSection
-            title={
-              <>
                 <UserPlus className="inline-block" /> Basic Information
               </>
             }
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                icon={User}
-                label="Full Name"
-                type="text"
-                name="name"
-                value={user.name}
-                readOnly
-              />
-              <InputField
-                icon={Mail}
-                label="Email"
-                type="email"
-                name="email"
-                value={user.email}
-                readOnly
-              />
+              <InputField icon={User} label="Full Name" type="text" name="name" value={user.name} readOnly />
+              <InputField icon={Mail} label="Email" type="email" name="email" value={user.email} readOnly />
               <InputField
                 icon={Calendar}
                 label="Date of Birth"
                 type="date"
-                name="dob"
-                value={formData.dob}
+                name="dateOfBirth"
+                value={formData.dateOfBirth}
                 onChange={handleChange}
-                error={errors.dob}
+                error={errors.dateOfBirth}
               />
               <SelectField
                 icon={User}
@@ -233,9 +211,9 @@ const StudentProfileFormScreen = () => {
                 error={errors.gender}
               >
                 <option value="">Select Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
               </SelectField>
             </div>
           </FormSection>
@@ -252,29 +230,33 @@ const StudentProfileFormScreen = () => {
                 icon={BookOpen}
                 label="Roll Number"
                 type="text"
-                name="rollNo"
-                value={formData.rollNo}
+                name="rollNumber"
+                value={formData.rollNumber}
                 onChange={handleChange}
-                error={errors.rollNo}
+                error={errors.rollNumber}
               />
-              <InputField
+              <SelectField
                 icon={School}
                 label="Department"
-                type="text"
                 name="department"
                 value={formData.department}
                 onChange={handleChange}
                 error={errors.department}
-              />
-              <InputField
+              >
+                <option value="">Select Department</option>
+                {DEPARTMENTS.map((department) => <option key={department} value={department}>{department}</option>)}
+              </SelectField>
+              <SelectField
                 icon={School}
                 label="Division"
-                type="text"
-                name="division"
-                value={formData.division}
+                name="classDivision"
+                value={formData.classDivision}
                 onChange={handleChange}
-                error={errors.division}
-              />
+                error={errors.classDivision}
+              >
+                <option value="">Select Division</option>
+                {DIVISIONS.map((division) => <option key={division} value={division}>{division}</option>)}
+              </SelectField>
               <SelectField
                 icon={School}
                 label="Admission Type"
@@ -313,10 +295,7 @@ const StudentProfileFormScreen = () => {
                 error={errors.currentYear}
               >
                 <option value="">Select Year</option>
-                <option value="FE">FE</option>
-                <option value="SE">SE</option>
-                <option value="TE">TE</option>
-                <option value="BE">BE</option>
+                {YEARS.map((year) => <option key={year} value={year}>{year}</option>)}
               </SelectField>
             </div>
           </FormSection>
@@ -333,10 +312,10 @@ const StudentProfileFormScreen = () => {
                 icon={Phone}
                 label="Phone Number"
                 type="tel"
-                name="phone"
-                value={formData.phone}
+                name="phoneNumber"
+                value={formData.phoneNumber}
                 onChange={handleChange}
-                error={errors.phone}
+                error={errors.phoneNumber}
               />
               <SelectField
                 icon={Home}
@@ -346,23 +325,22 @@ const StudentProfileFormScreen = () => {
                 onChange={handleChange}
                 error={errors.hostelStatus}
               >
-                <option value="hostel">Hostel</option>
-                <option value="day_scholar">Day Scholar</option>
+                <option value="Hostel">Hostel</option>
+                <option value="Day Scholar">Day Scholar</option>
               </SelectField>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-amber-500/80 mb-1.5">
+                <label htmlFor="address" className="block text-sm font-medium text-amber-500/80 mb-1.5">
                   Address
                 </label>
                 <textarea
+                  id="address"
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
+                  maxLength={200}
                   className="w-full p-3 rounded-xl bg-[#1a1a1d] text-white border border-amber-500/20 hover:border-amber-500/40 focus:border-amber-500 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200"
                   rows="3"
                 />
-                {errors.address && (
-                  <p className="text-red-400 text-sm mt-1">{errors.address}</p>
-                )}
               </div>
             </div>
           </FormSection>
@@ -382,7 +360,6 @@ const StudentProfileFormScreen = () => {
                 name="emergencyContact.name"
                 value={formData.emergencyContact.name}
                 onChange={handleChange}
-                error={errors["emergencyContact.name"]}
               />
               <InputField
                 icon={User}
@@ -391,7 +368,6 @@ const StudentProfileFormScreen = () => {
                 name="emergencyContact.relation"
                 value={formData.emergencyContact.relation}
                 onChange={handleChange}
-                error={errors["emergencyContact.relation"]}
               />
               <InputField
                 icon={Phone}
@@ -400,7 +376,6 @@ const StudentProfileFormScreen = () => {
                 name="emergencyContact.contact"
                 value={formData.emergencyContact.contact}
                 onChange={handleChange}
-                error={errors["emergencyContact.contact"]}
               />
             </div>
           </FormSection>
@@ -432,14 +407,15 @@ const StudentProfileFormScreen = () => {
                 <option value="AB-">AB-</option>
               </SelectField>
               <div>
-                <label className="block text-sm font-medium text-amber-500/80 mb-1.5">
+                <label htmlFor="idProof" className="block text-sm font-medium text-amber-500/80 mb-1.5">
                   ID Proof
                 </label>
 
                 <input
+                  id="idProof"
                   type="file"
-                  onChange={(e) => handleImageChange(e, "idProof")}
-                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleFileChange}
+                  accept={FILE_ACCEPT}
                   className="w-full text-sm text-amber-500/60 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-amber-500 file:text-white hover:file:bg-amber-600 transition-all duration-200"
                 />
                 {errors.idProof && (
@@ -447,62 +423,35 @@ const StudentProfileFormScreen = () => {
                     <AlertCircle className="w-4 h-4" /> {errors.idProof}
                   </p>
                 )}
-                <p className="text-amber-500/40 text-sm mt-1">
-                  Accepted formats: PDF, JPG, PNG (Max 5MB)
-                </p>
+                <p className="text-amber-500/40 text-sm mt-1">{FILE_HINT}</p>
               </div>
             </div>
           </FormSection>
 
+          {formError && (
+            <p role="alert" className="text-red-300 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" /> {formError}
+            </p>
+          )}
+
           <div className="flex justify-end gap-4 pt-6">
             <button
               type="button"
-              onClick={() =>
-                setFormData({
-                  name: "John Doe",
-                  email: "john.doe@example.com",
-                  profilePic: null,
-                  dateOfBirth: "",
-                  gender: "",
-                  phoneNumber: "",
-                  rollNumber: "",
-                  department: "",
-                  division: "",
-                  admissionType: "regular",
-                  admissionDate: "",
-                  currentYear: "",
-                  passingYear: "",
-                  hostelStatus: "hostel",
-                  address: "",
-                  emergencyContact: { name: "", relation: "", contact: "" },
-                  bloodGroup: "",
-                  idProof: null,
-                })
-              }
+              onClick={resetForm}
               className="px-6 py-2.5 rounded-xl border border-amber-500/20 text-amber-500 hover:bg-amber-500/10 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200"
             >
               Reset Form
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium hover:from-amber-600 hover:to-amber-700 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200 flex items-center gap-2"
+              disabled={loading}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium hover:from-amber-600 hover:to-amber-700 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#131314] transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
             >
               <Upload className="w-4 h-4" />
-              Submit Form
+              {loading ? "Submitting…" : "Submit Form"}
             </button>
           </div>
         </form>
-
-        {/* Success Modal - Can be implemented if needed */}
-        {/* <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-[#1a1a1d] p-6 rounded-2xl shadow-xl border border-amber-500/10 max-w-md w-full mx-4">
-            <h3 className="text-2xl font-bold text-amber-500">Success!</h3>
-            <p className="text-gray-300 mt-2">Your form has been submitted successfully.</p>
-            <button className="mt-4 w-full px-4 py-2 bg-amber-500 text-white rounded-xl">
-              Close
-            </button>
-          </div>
-        </div>  */}
       </div>
     </div>
   );

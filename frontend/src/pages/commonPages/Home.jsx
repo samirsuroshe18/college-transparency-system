@@ -1,195 +1,129 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-    Shield,
-    Users,
-    Mail,
-    Key,
-    Brain,
-    UserCheck,
-    Layout,
-    MousePointer,
-    Smartphone,
-    UserCog
-} from 'lucide-react';
+import { Shield } from 'lucide-react';
+import { getDashboard } from '../../api/dashboardApi';
+import { errorMessage } from '../../api/client';
 
+const ROLE_LABELS = { student: 'Student', faculty: 'Faculty', admin: 'Administrator', doctor: 'College doctor' };
+
+// the lines under the name: what identifies this user in the college
+const detailsOf = (user) => {
+    if (user.role === 'student') {
+        return [
+            ['Department', user.department],
+            ['Class', [user.currentYear, user.classDivision].filter(Boolean).join(' · ')],
+            ['Roll number', user.rollNumber],
+        ];
+    }
+
+    if (user.role === 'faculty') {
+        const coordinator = user.coordinatorOf?.department
+            ? `${user.coordinatorOf.department} ${user.coordinatorOf.year} ${user.coordinatorOf.division}`
+            : '';
+
+        return [
+            ['Department', user.department],
+            ['Designation', user.designation],
+            ['Board member', user.isBoardMember ? 'Yes' : ''],
+            ['Coordinator of', coordinator],
+        ];
+    }
+
+    return [];
+};
+
+// The dashboard: who is logged in and the figures that concern them
 const Home = () => {
     const user = useSelector(state => state.auth.userData);
-    const [imgError, setImgError] = useState(false);
+    const [cards, setCards] = useState(null);
+    const [error, setError] = useState('');
 
-    const systemFeatures = [
-        {
-            icon: <UserCog className="w-8 h-8 text-blue-600" />,
-            title: "Role Management",
-            description: "Advanced user and admin role management system with granular permissions control."
-        },
-        {
-            icon: <Brain className="w-8 h-8 text-purple-600" />,
-            title: "AI Content Moderation",
-            description: "Intelligent AI-powered system for detecting and filtering inappropriate content."
-        },
-        {
-            icon: <Shield className="w-8 h-8 text-green-600" />,
-            title: "Enhanced Security",
-            description: "OAuth authentication, domain validation for college emails, and admin approval system."
-        },
-        {
-            icon: <Mail className="w-8 h-8 text-red-600" />,
-            title: "Email Notifications",
-            description: "Automated email updates for students using Nodemailer integration."
-        },
-        {
-            icon: <Key className="w-8 h-8 text-yellow-600" />,
-            title: "Session Management",
-            description: "Secure JWT token-based session management for enhanced security."
-        }
-    ];
+    useEffect(() => {
+        let cancelled = false;
 
-    const userExperience = [
-        {
-            icon: <Layout className="w-8 h-8 text-indigo-600" />,
-            title: "User Friendly Interface",
-            description: "Clean and intuitive design that makes navigation effortless."
-        },
-        {
-            icon: <MousePointer className="w-8 h-8 text-pink-600" />,
-            title: "Interactive Experience",
-            description: "Engaging interface with real-time updates and smooth interactions."
-        },
-        {
-            icon: <Smartphone className="w-8 h-8 text-cyan-600" />,
-            title: "Responsive Design",
-            description: "Seamlessly adapts to all devices and screen sizes."
-        }
-    ];
+        getDashboard()
+            .then((data) => { if (!cancelled) setCards(data.cards); })
+            .catch((err) => { if (!cancelled) setError(errorMessage(err)); });
 
-    const handleImageError = () => {
-        console.log("Image failed to load, falling back to initials");
-        setImgError(true);
-    };
+        return () => { cancelled = true; };
+    }, []);
 
-    const ProfileImage = () => {
-        if (!user) return null;
-
-        if (imgError || !user.profilePic) {
-            return (
-                <div className="w-32 h-32 rounded-full bg-blue-400 flex items-center justify-center border-4 border-white shadow-lg">
-                    <span className="text-4xl text-white">
-                        {user.name?.charAt(0)?.toUpperCase()}
-                    </span>
-                </div>
-            );
-        }
-
-        return (
-            <img
-                src={user.profilePic}
-                alt={`${user.name}'s profile`}
-                className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
-                onError={handleImageError}
-                crossOrigin="anonymous"
-                referrerPolicy="no-referrer"
-            />
-        );
-    };
+    const details = detailsOf(user).filter(([, value]) => value);
 
     return (
         <div className="min-h-screen bg-gray-50 w-full">
             {/* Hero Section with Profile */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16 w-full">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-12 w-full">
                 <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
                     <div className="md:w-2/3">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                            Welcome{user ? `, ${user.name}` : ' to Our College Portal'}
+                        <h1 className="text-3xl md:text-5xl font-bold mb-4 break-words">
+                            Welcome, {user.name}
                         </h1>
                         <p className="text-xl opacity-90 max-w-2xl mb-6">
-                            Your comprehensive digital solution for streamlined college administration and enhanced academic experience.
+                            {ROLE_LABELS[user.role]}{user.isDemo ? ' · demo account' : ''}
                         </p>
-                        {user && (
+                        {details.length > 0 && (
                             <div className="text-lg opacity-80">
-                                <p>Department: {user.department}</p>
-                                <p>Year: {user.currentYear}</p>
+                                {details.map(([label, value]) => <p key={label}>{label}: {value}</p>)}
                             </div>
                         )}
                     </div>
-                    {user && (
-                        <div className="md:w-1/3 flex justify-center mt-6 md:mt-0">
-                            <div className="relative">
-                                <ProfileImage />
-                                <div className="absolute -bottom-2 right-0 bg-green-500 w-6 h-6 rounded-full border-2 border-white"></div>
-                            </div>
+                    <div className="md:w-1/3 flex justify-center mt-6 md:mt-0">
+                        <div className="w-32 h-32 rounded-full bg-blue-400 flex items-center justify-center border-4 border-white shadow-lg">
+                            <span className="text-4xl text-white">
+                                {user.name?.charAt(0)?.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Figures for this user */}
+            <div className="w-full bg-white py-12">
+                <div className="container mx-auto px-4">
+                    <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
+                        At a glance
+                    </h2>
+
+                    {error && <p role="alert" className="text-center text-red-600">{error}</p>}
+                    {!error && cards === null && <p className="text-center text-gray-500">Loading…</p>}
+
+                    {cards && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {cards.map((card) => (
+                                <Link key={card.key} to={card.link} className="block">
+                                    {/* the page is light whatever the theme of the frame, so the card is too */}
+                                    <Card className="bg-white border-gray-200 hover:shadow-lg transition-all duration-300 h-full">
+                                        <CardContent className="p-6">
+                                            <p className="text-4xl font-bold text-blue-700">{card.value}</p>
+                                            <h3 className="text-lg font-semibold mt-2 text-gray-800">
+                                                {card.label}
+                                            </h3>
+                                        </CardContent>
+                                    </Card>
+                                </Link>
+                            ))}
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* System Features */}
-            <div className="w-full bg-white py-16">
-                <div className="container mx-auto px-4">
-                    <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
-                        Advanced System Features
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {systemFeatures.map((feature, index) => (
-                            <Card key={index} className="hover:shadow-lg transition-all duration-300">
-                                <CardContent className="p-6">
-                                    <div className="mb-4">
-                                        {feature.icon}
-                                    </div>
-                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">
-                                        {feature.title}
-                                    </h3>
-                                    <p className="text-gray-600">
-                                        {feature.description}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* User Experience Features */}
-            <div className="w-full bg-gray-50 py-16">
-                <div className="container mx-auto px-4">
-                    <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
-                        User Experience
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {userExperience.map((feature, index) => (
-                            <Card key={index} className="hover:shadow-lg transition-all duration-300">
-                                <CardContent className="p-6">
-                                    <div className="mb-4">
-                                        {feature.icon}
-                                    </div>
-                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">
-                                        {feature.title}
-                                    </h3>
-                                    <p className="text-gray-600">
-                                        {feature.description}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Security Badge */}
-            <div className="w-full bg-white py-16">
+            {/* What the system is for */}
+            <div className="w-full bg-white pb-16">
                 <div className="container mx-auto px-4">
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8 flex items-center justify-between">
                         <div className="flex items-center space-x-6">
                             <Shield className="w-16 h-16 text-blue-600 hidden md:block" />
                             <div>
                                 <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                                    Enterprise-Grade Security
+                                    Decisions in the open
                                 </h3>
                                 <p className="text-gray-600 max-w-2xl">
-                                    Our platform implements multiple layers of security including OAuth authentication,
-                                    domain validation, admin approval system, and JWT token-based session management
-                                    to ensure your data remains secure and protected.
+                                    Elections, complaints, bookings, applications and budgets are handled here so that
+                                    everyone can see what was decided and by whom. The modules appear in the menu as
+                                    they are connected.
                                 </p>
                             </div>
                         </div>
