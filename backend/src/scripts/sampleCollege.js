@@ -40,7 +40,11 @@ const faculty = (name, email, facultyId, department, designation, extra = {}) =>
 const people = [
     // the demo logins
     student('Riya Demo', DEMO_LOGINS.student, 'CS-TE-A-01', 'Computer', 'TE', 'A'),
-    faculty('Prof. Anil Demo', DEMO_LOGINS.faculty, 'FAC-100', 'Computer', 'Professor', { isBoardMember: true }),
+    faculty('Prof. Anil Demo', DEMO_LOGINS.faculty, 'FAC-100', 'Computer', 'Professor', {
+        isBoardMember: true,
+        // coordinator of the demo student's class
+        coordinatorOf: { department: 'Computer', year: 'TE', division: 'A' },
+    }),
     { name: 'Admin Demo', email: DEMO_LOGINS.admin, role: 'admin' },
     { name: 'Dr. Kavita Demo', email: DEMO_LOGINS.doctor, role: 'doctor' },
 
@@ -51,11 +55,7 @@ const people = [
     student('Ananya Rao', `ananya${DEMO_DOMAIN}`, 'IT-SE-A-01', 'IT', 'SE', 'A', { hostelStatus: 'Hostel' }),
     student('Vihaan Joshi', `vihaan${DEMO_DOMAIN}`, 'IT-SE-A-02', 'IT', 'SE', 'A'),
     student('Meera Nair', `meera${DEMO_DOMAIN}`, 'IT-BE-A-01', 'IT', 'BE', 'A'),
-    faculty('Prof. Sunita Patil', `sunita${DEMO_DOMAIN}`, 'FAC-101', 'Computer', 'Associate Professor', {
-        isBoardMember: true,
-        // coordinator of the demo student's class
-        coordinatorOf: { department: 'Computer', year: 'TE', division: 'A' },
-    }),
+    faculty('Prof. Sunita Patil', `sunita${DEMO_DOMAIN}`, 'FAC-101', 'Computer', 'Associate Professor', { isBoardMember: true }),
     faculty('Prof. Rajesh Kulkarni', `rajesh${DEMO_DOMAIN}`, 'FAC-102', 'IT', 'Assistant Professor', { isBoardMember: true }),
     faculty('Prof. Neha Deshpande', `neha${DEMO_DOMAIN}`, 'FAC-103', 'IT', 'Lecturer'),
 

@@ -1,5 +1,5 @@
-// What happens in the sample college: elections, complaints, bookings and applications
-// in different states, so that every page has something to show and every role
+// What happens in the sample college: elections, complaints, bookings, applications,
+// budgets, integrity records and health concerns in different states, so that every page has something to show and every role
 // something to do. All of it is marked isDemo and is rebuilt with the sample accounts.
 import { Election } from '../models/election.model.js';
 import { Candidate } from '../models/candidate.model.js';
@@ -8,6 +8,9 @@ import { Complaint } from '../models/complaint.model.js';
 import { Facility } from '../models/facility.model.js';
 import { Booking } from '../models/booking.model.js';
 import { Application } from '../models/application.model.js';
+import { Budget } from '../models/budget.model.js';
+import { IntegrityRecord } from '../models/integrityRecord.model.js';
+import { HealthConcern } from '../models/healthConcern.model.js';
 import { collegeDayFromNow } from '../utils/collegeTime.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -30,6 +33,9 @@ const removeSampleContent = async () => {
     await Facility.deleteMany({ _id: { $in: facilityIds } });
 
     await Application.deleteMany({ isDemo: true });
+    await Budget.deleteMany({ isDemo: true });
+    await IntegrityRecord.deleteMany({ isDemo: true });
+    await HealthConcern.deleteMany({ isDemo: true });
 };
 
 const buildElections = async (who) => {
@@ -154,12 +160,56 @@ const buildApplications = (who) => {
     ]);
 };
 
+const buildBudgets = (who) => {
+    const decision = (comment, days) => ({ comment, by: who.admin._id, at: fromNow(days) });
+
+    return Budget.create([
+        { requestedBy: who.student._id, category: 'event', title: 'Prizes and refreshments for the coding contest', description: 'Trophies for three winners and refreshments for sixty participants of the inter-class contest.', requestedAmount: 12000, createdAt: fromNow(-1), isDemo: true },
+        { requestedBy: who.faculty._id, category: 'department', title: 'Projector for the Computer department seminar room', description: 'The current projector is eight years old and cannot show the laptops used in the labs.', requestedAmount: 48500.5, createdAt: fromNow(-3), isDemo: true },
+        { requestedBy: who.ananya._id, category: 'event', title: 'Sports week equipment', description: 'Shuttlecocks, two nets, footballs and first-aid kits for the annual sports week.', requestedAmount: 30000, approvedAmount: 22000, status: 'approved', decision: decision('Approved in part. The nets from last year can be used again.', -6), createdAt: fromNow(-9), isDemo: true },
+        { requestedBy: who.meera._id, category: 'mess', title: 'Water purifier for the hostel mess', description: 'A second purifier for the dining hall, where two hundred students eat every day.', requestedAmount: 18000, approvedAmount: 18000, status: 'approved', decision: decision('Approved in full.', -11), createdAt: fromNow(-14), isDemo: true },
+        { requestedBy: who.vihaan._id, category: 'other', title: 'Jackets for the organising committee', description: 'Printed jackets for the forty volunteers of the technical festival.', requestedAmount: 40000, status: 'rejected', decision: decision('College funds are not used for clothing. Please look for a sponsor.', -4), createdAt: fromNow(-7), isDemo: true },
+    ]);
+};
+
+const buildIntegrityRecords = (who) => {
+    const about = (student) => ({
+        student: student._id, studentName: student.name, rollNumber: student.rollNumber,
+        department: student.department, year: student.currentYear,
+    });
+
+    return IntegrityRecord.create([
+        { ...about(who.vihaan), reason: 'Carried written notes into the second internal test of Data Structures.', recordedBy: who.rajesh._id, createdAt: fromNow(-12), isDemo: true },
+        { ...about(who.meera), reason: 'Submitted a project report copied from a senior batch without credit.', recordedBy: who.neha._id, createdAt: fromNow(-3), isDemo: true },
+    ]);
+};
+
+const buildHealthConcerns = (who) => HealthConcern.create([
+    // waiting for the doctor
+    { student: who.diya._id, symptoms: 'Severe stomach pain since the morning', description: 'Started after breakfast in the mess. Could not attend the first two lectures.', urgency: 'urgent', createdAt: fromNow(0), isDemo: true },
+    { student: who.student._id, symptoms: 'Headache that returns every evening', description: 'For about a week, mostly after lab sessions.', createdAt: fromNow(-1), isDemo: true },
+    // assessed; the first one is a leave that covers today, in the demo coordinator's class
+    {
+        student: who.aarav._id, symptoms: 'High fever and body ache', urgency: 'urgent', status: 'assessed',
+        assessment: { diagnosis: 'Viral fever. Rest, fluids and paracetamol. Come back if the fever lasts more than three days.', leaveDays: 3, by: who.doctor._id, at: fromNow(-1) },
+        leaveFrom: dayFromNow(-1), leaveUntil: dayFromNow(1), createdAt: fromNow(-1), isDemo: true,
+    },
+    {
+        student: who.kabir._id, symptoms: 'Sore throat', status: 'assessed',
+        assessment: { diagnosis: 'Mild throat infection. Warm water and lozenges. No leave needed.', leaveDays: 0, by: who.doctor._id, at: fromNow(-4) },
+        createdAt: fromNow(-5), isDemo: true,
+    },
+]);
+
 // "who" maps a short name to the sample account, for example who.student or who.aarav
 const buildSampleContent = async (who) => {
     await buildElections(who);
     await buildComplaints(who);
     await buildBookings(who);
     await buildApplications(who);
+    await buildBudgets(who);
+    await buildIntegrityRecords(who);
+    await buildHealthConcerns(who);
 };
 
 export { removeSampleContent, buildSampleContent }

@@ -12,6 +12,9 @@ import { Complaint } from '../src/models/complaint.model.js';
 import { Facility } from '../src/models/facility.model.js';
 import { Booking } from '../src/models/booking.model.js';
 import { Application } from '../src/models/application.model.js';
+import { Budget } from '../src/models/budget.model.js';
+import { IntegrityRecord } from '../src/models/integrityRecord.model.js';
+import { HealthConcern } from '../src/models/healthConcern.model.js';
 import { stageOf } from '../src/utils/electionStage.js';
 import { collegeDayFromNow } from '../src/utils/collegeTime.js';
 import { createUser, createAdmin, loginAgent } from './helpers.js';
@@ -227,7 +230,7 @@ describe('module figures', () => {
 
         const res = await (await loginAgent(me)).get(api);
 
-        expect(cardsOf(res)).toEqual({ openElections: 1, myPendingBookings: 1, myPendingApplications: 1, unreadNotices: 0 });
+        expect(cardsOf(res)).toEqual({ openElections: 1, myPendingBookings: 1, myPendingApplications: 1, myOpenConcerns: 0, unreadNotices: 0 });
     });
 
     test('a faculty member sees applications waiting for a review; a board member also sees reveal votes waiting', async () => {
@@ -284,8 +287,64 @@ describe('module figures', () => {
         expect(forBoard).toMatchObject({ applicationsToReview: 1, complaintsToReveal: 1 });
     });
 
-    test('the doctor sees notices only, for now', async () => {
-        expect(cardsOf(await (await loginAgent(await createUser({ role: 'doctor' }))).get(api))).toEqual({ unreadNotices: 0 });
+    const budgetOf = (user, overrides = {}) => Budget.create({ title: 't', category: 'event', description: 'd', requestedAmount: 100, requestedBy: user._id, ...overrides });
+    const concernOf = (user, overrides = {}) => HealthConcern.create({ student: user._id, symptoms: 's', ...overrides });
+    const leaveOf = (user, from, until, overrides = {}) => concernOf(user, {
+        status: 'assessed', assessment: { diagnosis: 'd', leaveDays: 3, at: new Date() },
+        leaveFrom: collegeDayFromNow(from), leaveUntil: collegeDayFromNow(until), ...overrides,
+    });
+
+    test('an admin sees budget requests waiting; the demo admin counts sample ones only', async () => {
+        const student = await createUser();
+        await budgetOf(student);
+        await budgetOf(student, { isDemo: true });
+        await budgetOf(student, { status: 'approved', approvedAmount: 50 });
+
+        expect(cardsOf(await (await loginAgent(await createAdmin())).get(api)).pendingBudgets).toBe(2);
+        expect(cardsOf(await (await loginAgent(await createAdmin({ isDemo: true }))).get(api)).pendingBudgets).toBe(1);
+    });
+
+    test('the doctor sees how many concerns are open and how many of them are urgent', async () => {
+        const student = await createUser();
+        await concernOf(student);
+        await concernOf(student, { urgency: 'urgent' });
+        await concernOf(student, { urgency: 'urgent', status: 'assessed' });
+        await concernOf(student, { urgency: 'urgent', isDemo: true });
+
+        const real = cardsOf(await (await loginAgent(await createUser({ role: 'doctor' }))).get(api));
+        const demo = cardsOf(await (await loginAgent(await createUser({ role: 'doctor', isDemo: true }))).get(api));
+
+        expect(real).toEqual({ openConcerns: 3, urgentConcerns: 2, unreadNotices: 0 });
+        expect(demo).toEqual({ openConcerns: 1, urgentConcerns: 1, unreadNotices: 0 });
+    });
+
+    test('a student sees their own open concerns', async () => {
+        const me = await createUser();
+        await concernOf(me);
+        await concernOf(me, { status: 'assessed' });
+        await concernOf(await createUser());
+
+        expect(cardsOf(await (await loginAgent(me)).get(api)).myOpenConcerns).toBe(1);
+    });
+
+    test('a coordinator sees how many students of the class are on leave today', async () => {
+        const inClass = { department: 'Computer', currentYear: 'TE', classDivision: 'A' };
+        const guide = await createUser({ role: 'faculty', coordinatorOf: { department: 'Computer', year: 'TE', division: 'A' } });
+        const away = await createUser(inClass);
+        await leaveOf(away, -1, 1);
+        await leaveOf(away, 0, 0);
+        await leaveOf(await createUser(inClass), -5, -1);
+        await leaveOf(await createUser(inClass), 1, 3);
+        await leaveOf(await createUser({ ...inClass, classDivision: 'B' }), -1, 1);
+        await leaveOf(await createUser({ ...inClass, isDemo: true }), -1, 1, { isDemo: true });
+
+        const forGuide = cardsOf(await (await loginAgent(guide)).get(api));
+        const forDemoGuide = cardsOf(await (await loginAgent(await createUser({ role: 'faculty', isDemo: true, coordinatorOf: { department: 'Computer', year: 'TE', division: 'A' } }))).get(api));
+        const forPlain = cardsOf(await (await loginAgent(await createUser({ role: 'faculty' }))).get(api));
+
+        expect(forGuide.studentsOnLeave).toBe(2);
+        expect(forDemoGuide.studentsOnLeave).toBe(1);
+        expect(forPlain).not.toHaveProperty('studentsOnLeave');
     });
 
     test('every card has a label and a link into the app', async () => {
@@ -306,6 +365,49 @@ describe('sample data of the modules', () => {
         facilities: await Facility.countDocuments(),
         bookings: await Booking.countDocuments(),
         applications: await Application.countDocuments(),
+        budgets: await Budget.countDocuments(),
+        records: await IntegrityRecord.countDocuments(),
+        concerns: await HealthConcern.countDocuments(),
+    });
+
+    test('the last modules have sample content in different states', async () => {
+        await rebuildSampleCollege();
+
+        expect(await Budget.countDocuments({ isDemo: true })).toBe(5);
+        expect((await Budget.distinct('status')).sort()).toEqual(['approved', 'pending', 'rejected']);
+        expect(await IntegrityRecord.countDocuments({ isDemo: true })).toBe(2);
+        expect(await HealthConcern.countDocuments({ isDemo: true })).toBe(4);
+        expect(await HealthConcern.countDocuments({ status: 'open', urgency: 'urgent' })).toBe(1);
+        expect(await HealthConcern.countDocuments({ status: 'open', urgency: 'normal' })).toBe(1);
+        expect(await HealthConcern.countDocuments({ status: 'assessed' })).toBe(2);
+    });
+
+    test('every demo login has something to see in the last modules', async () => {
+        await rebuildSampleCollege();
+        const login = async (role) => loginAgent(await User.findOne({ email: DEMO_LOGINS[role] }), DEMO_PASSWORD);
+
+        expect(cardsOf(await (await login('admin')).get(api)).pendingBudgets).toBeGreaterThan(0);
+        expect(cardsOf(await (await login('doctor')).get(api))).toMatchObject({ openConcerns: 2, urgentConcerns: 1 });
+        expect(cardsOf(await (await login('student')).get(api)).myOpenConcerns).toBe(1);
+        // the demo faculty member coordinates the demo student's class, where someone is on leave today
+        expect(cardsOf(await (await login('faculty')).get(api)).studentsOnLeave).toBe(1);
+        expect((await (await login('faculty')).get('/api/v1/leaves')).body.data.leaves).toHaveLength(1);
+    });
+
+    test('real budgets, records and concerns are kept by a rebuild', async () => {
+        await rebuildSampleCollege();
+        const real = await createUser({ email: 'kept.person@gmail.com', rollNumber: 'REAL-77' });
+        await Budget.create({ title: 'Real budget', category: 'event', description: 'd', requestedAmount: 10, requestedBy: real._id });
+        await IntegrityRecord.create({ student: real._id, studentName: real.name, rollNumber: 'REAL-77', reason: 'r' });
+        await HealthConcern.create({ student: real._id, symptoms: 'Real concern' });
+        const before = await counts();
+
+        await rebuildSampleCollege();
+
+        expect(await counts()).toEqual(before);
+        expect(await Budget.countDocuments({ title: 'Real budget' })).toBe(1);
+        expect(await IntegrityRecord.countDocuments({ rollNumber: 'REAL-77' })).toBe(1);
+        expect(await HealthConcern.countDocuments({ symptoms: 'Real concern' })).toBe(1);
     });
 
     test('there is an election at every stage, with a winner in the closed one', async () => {
