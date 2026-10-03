@@ -92,4 +92,27 @@ async function mailSender(email, userId, emailType) {
   }
 };
 
+const escapeHtml = (text) => String(text)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;');
+
+// A plain message about a decision. The text can contain what users typed, so it is
+// escaped. Returns whether it was sent; a failure never stops the request that caused it.
+async function sendMail(to, subject, text) {
+  try {
+    await deliver({
+      to,
+      subject,
+      html: `<p>${escapeHtml(text).replace(/\n/g, '<br>')}</p>\n<p>College Transparency System</p>`,
+    });
+    return true;
+  } catch (error) {
+    console.log(error.message);
+    return false;
+  }
+}
+
+export { sendMail };
 export default mailSender;

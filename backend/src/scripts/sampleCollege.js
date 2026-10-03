@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { User } from '../models/user.model.js';
 import { Notice } from '../models/notice.model.js';
+import { buildSampleContent, removeSampleContent } from './sampleContent.js';
 
 import { DEMO_DOMAIN, DEMO_ID_PREFIX } from '../utils/demo.js';
 
@@ -77,6 +78,8 @@ const stableId = (email) =>
 // Removes everything that belongs to the sample college. Accounts made by real
 // sign-ups are not touched.
 const removeSampleCollege = async () => {
+    await removeSampleContent();
+
     const ids = await demoUserIds();
 
     await Notice.deleteMany({ user: { $in: ids } });
@@ -96,6 +99,10 @@ const rebuildSampleCollege = async () => {
         profileStatus: 'Approved',
         ...person,
     })));
+
+    // the content refers to people by the first part of their address: who.student, who.aarav
+    const who = Object.fromEntries(users.map((user) => [user.email.split('@')[0], user]));
+    await buildSampleContent(who);
 
     return { users: users.length };
 };

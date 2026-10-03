@@ -46,7 +46,19 @@ const byEmail = limiter(
 // sign-up, login and password reset: they can send email or test a password
 const accountLimiter = [byVisitor, byConnection, byEmail];
 
-// profile forms can carry a file; use after verifyJwt
-const profileLimiter = limiter(setting('PROFILE_RATE_LIMIT', 10), (req) => `user:${req.user?._id}`);
+// The demo accounts are shared by every visitor, so limits for logged-in users are
+// kept per user and visitor: one visitor cannot use up the allowance of the others.
+const userAndVisitor = (prefix) => (req) => `${prefix}:${req.user?._id}:${visitorOf(req)}`;
 
-export { accountLimiter, profileLimiter }
+// forms that can carry a file; use after verifyJwt
+const profileLimiter = limiter(setting('PROFILE_RATE_LIMIT', 10), userAndVisitor('form'));
+
+// Everything that changes something in the modules; reading is not limited.
+// Use after verifyJwt.
+const writeLimiter = limiter(
+    setting('WRITE_RATE_LIMIT', 60),
+    userAndVisitor('write'),
+    (req) => skippedInTests() || req.method === 'GET'
+);
+
+export { accountLimiter, profileLimiter, writeLimiter }

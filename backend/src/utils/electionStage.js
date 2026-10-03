@@ -1,0 +1,28 @@
+// last moment of the day a date falls on, in UTC
+const endOfDay = (date) => {
+    const day = new Date(date);
+    return new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 23, 59, 59, 999));
+};
+
+// Where an election is. Students apply until the deadline; voting runs from the
+// deadline to the end of the voting day; after that, or once an admin has ended it,
+// the election is closed.
+const stageOf = (election, now = new Date()) => {
+    if (election.endedAt) return 'closed';
+    if (now < new Date(election.applicationDeadline)) return 'applications';
+    if (now <= endOfDay(election.votingDay)) return 'voting';
+    return 'closed';
+};
+
+// Students may stand and vote when they match every rule the election sets
+const isEligible = (election, user) => {
+    if (user.role !== 'student') return false;
+
+    const rules = election.eligibility || {};
+
+    return (!rules.department || rules.department === user.department)
+        && (!rules.year || rules.year === user.currentYear)
+        && (!rules.division || rules.division === user.classDivision);
+};
+
+export { endOfDay, stageOf, isEligible }

@@ -1,357 +1,271 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { useDispatch, useSelector } from "react-redux";
-import { showNotificationWithTimeout } from "../../redux/slices/notificationSlice";
-import { handleAxiosError } from "../../utils/handleAxiosError";
+import { useCallback, useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { decideApplication, listApplications, reviewApplication, submitApplication } from "../../api/applicationApi";
+import { errorMessage } from "../../api/client";
+import useToast from "../../utils/useToast";
+import { FILE_ACCEPT, FILE_HINT, fileProblem } from "../../lib/college";
+
+const CATEGORIES = [
+    { value: "event", label: "Event" },
+    { value: "budget", label: "Budget" },
+    { value: "sponsorship", label: "Sponsorship" },
+];
+const STATUSES = ["pending", "approved", "rejected"];
+const STATUS_STYLES = { pending: "bg-amber-100 text-amber-700", approved: "bg-green-100 text-green-700", rejected: "bg-red-100 text-red-700" };
+
+const emptyApplication = () => ({ title: "", description: "", category: "event" });
+const fieldClass = "w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
+
+const formatDate = (value) => new Date(value).toLocaleDateString();
+
+// what was said about an application, and by whom
+const Remark = ({ label, remark, tone }) => (
+    <div className={`mt-3 p-3 rounded-md border text-sm text-gray-700 ${tone}`}>
+        <span className="font-semibold">{label}:</span> {remark.comment || "No comment"}
+        <span className="block text-xs text-gray-500 mt-1">
+            {remark.by?.name ? `${remark.by.name}, ` : ""}{formatDate(remark.at)}
+        </span>
+    </div>
+);
 
 const ApplicationManagement = () => {
-    const dispatch = useDispatch();
-    const [applications, setApplications] = useState([]);
-    const [message, setMessage] = useState("");
-    const [showPopup, setShowPopup] = useState(false);
-    const [showApplications, setShowApplications] = useState(false);
-    const [activeTab, setActiveTab] = useState('submit'); // Add state for active tab
-    const [newApplication, setNewApplication] = useState({
-        title: "",
-        description: "",
-        category: "event",
-        submittedBy: "USER_ID_PLACEHOLDER", // Replace with actual user ID if available
-    });
-    const [allApplications, setAllApplications] = useState({
-        pending: [],
-        approved: [],
-        rejected: []
-    });
+    const user = useSelector((state) => state.auth.userData);
+    const toast = useToast();
+    const isStudent = user.role === "student";
+    const isFaculty = user.role === "faculty";
+    const isAdmin = user.role === "admin";
 
-    useEffect(() => {
-        fetchAllApplications(); // Fetch all applications on mount
+    const [activeTab, setActiveTab] = useState(isStudent ? "submit" : "view");
+    const [applications, setApplications] = useState(null);
+    const [loadError, setLoadError] = useState("");
+    const [statusFilter, setStatusFilter] = useState("pending");
+    const [onlyMine, setOnlyMine] = useState(false);
+
+    const [newApplication, setNewApplication] = useState(emptyApplication);
+    const [file, setFile] = useState(null);
+    const [fileError, setFileError] = useState("");
+    const [formError, setFormError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    // what a faculty member or an admin is writing, per application
+    const [comments, setComments] = useState({});
+    const [busyId, setBusyId] = useState(null);
+
+    const load = useCallback(async () => {
+        try {
+            setApplications(await listApplications());
+            setLoadError("");
+        } catch (error) {
+            setLoadError(errorMessage(error));
+        }
     }, []);
 
-    // Fetch applications from the backend
-    const fetchApplications = async () => {
-        try {
-            const response = await axios.get(`${import.meta.env.VITE_DOMAIN}/api/v1/application/get-specific-user`, {
-                withCredentials: true, // Ensure cookies are sent if needed
-            });
-            dispatch(showNotificationWithTimeout({show:true,type:"success",message:"fetched"}));
-            setApplications(response.data);
-            setShowApplications(true);
-        } catch (error) {
-            dispatch(showNotificationWithTimeout({show:true,type:"error",message:handleAxiosError(error)}));
-            setMessage("Failed to load applications ❌");
-            setShowPopup(true);
-            setTimeout(() => setShowPopup(false), 3000);
-        }
+    useEffect(() => {
+        if (activeTab === "view") load();
+    }, [activeTab, load]);
 
-        const user=useSelector(state=>state.auth.userData);
-        console.log(user);
+    const handleChange = (e) => setNewApplication({ ...newApplication, [e.target.name]: e.target.value });
+
+    const handleFileChange = (e) => {
+        const chosen = e.target.files[0] || null;
+        const problem = fileProblem(chosen);
+
+        setFileError(problem);
+        setFile(problem ? null : chosen);
+        if (problem) e.target.value = "";
     };
 
-    // Add new function to fetch all applications
-    const fetchAllApplications = async () => {
-        try {
-            const response = await axios.get(`${import.meta.env.VITE_DOMAIN}/api/v1/application`, {
-                withCredentials: true,
-            });
-            // Categorize applications
-            const categorizedApps = {
-                pending: response.data.filter(app => app.status === 'pending'),
-                approved: response.data.filter(app => app.status === 'approved'),
-                rejected: response.data.filter(app => app.status === 'rejected')
-            };
-            setAllApplications(categorizedApps);
-        } catch (error) {
-            dispatch(showNotificationWithTimeout({show:true,type:"error",message:handleAxiosError(error)}));
-        }
-    };
-
-    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage("Submitting...");
+        setFormError("");
 
+        if (!newApplication.title.trim() || !newApplication.description.trim()) {
+            setFormError("Title and description are required.");
+            return;
+        }
+
+        setSubmitting(true);
         try {
-            // Create FormData object for multipart/form-data
-            const formData = new FormData();
-
-            // Append form fields
-            formData.append("title", newApplication.title);
-            formData.append("description", newApplication.description);
-            formData.append("category", newApplication.category);
-            formData.append("submittedBy", newApplication.submittedBy);
-
-            // If you're handling file uploads (e.g., images or documents)
-            if (newApplication.file) {
-                formData.append("file", newApplication.file);
-            }
-
-            // Send POST request with multipart/form-data
-            const response = await axios.post(
-                `${import.meta.env.VITE_DOMAIN}/api/v1/application/create`,
-                formData,
-                {
-                    withCredentials: true, // For cookies and sessions
-                    headers: {
-                        "Content-Type": "multipart/form-data"
-                    }
-                }
-            );
-
-            console.log(response.data);
-            setMessage("Application submitted successfully ✅");
-            setShowPopup(true);
-            setTimeout(() => setShowPopup(false), 3000);
-
-            // Reset form
-            setNewApplication({
-                title: "",
-                description: "",
-                category: "event",
-                submittedBy: "USER_ID_PLACEHOLDER",
-                file: null // Reset file field if applicable
-            });
+            const res = await submitApplication(newApplication, file);
+            toast.success(res.message);
+            setNewApplication(emptyApplication());
+            setFile(null);
+            setOnlyMine(true);
+            setStatusFilter("pending");
+            setActiveTab("view");
         } catch (error) {
-            console.error("Error submitting application:", error);
-            setMessage("Error submitting application ❌");
-            setShowPopup(true);
-            setTimeout(() => setShowPopup(false), 3000);
+            setFormError(errorMessage(error));
+        } finally {
+            setSubmitting(false);
         }
     };
 
-
-    // Handle input change
-    const handleChange = (e) => {
-        setNewApplication({
-            ...newApplication,
-            [e.target.name]: e.target.value,
-        });
+    // sends a review or a decision and puts the server's version back into the list
+    const act = async (application, request) => {
+        setBusyId(application._id);
+        try {
+            const res = await request(comments[application._id] || "");
+            toast.success(res.message);
+            setApplications((current) => current.map((item) => (item._id === application._id ? res.data.application : item)));
+            setComments((current) => ({ ...current, [application._id]: "" }));
+        } catch (error) {
+            toast.error(error);
+        } finally {
+            setBusyId(null);
+        }
     };
 
-    return (
-        <div className="container mx-auto p-4 relative">
-            {showPopup && (
-                <div className="fixed top-5 right-5 bg-white shadow-lg rounded-lg p-4 z-50 animate-fade-in">
-                    <div className={`${message.includes("✅") ? "text-green-600" : "text-red-600"} font-semibold`}>
-                        {message}
-                    </div>
-                </div>
-            )}
+    const tabClass = (tab) => `py-2 px-4 mr-2 ${activeTab === tab ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`;
 
+    const shown = (applications || []).filter((application) => application.status === statusFilter && (!onlyMine || application.mine));
+    const countOf = (status) => (applications || []).filter((application) => application.status === status && (!onlyMine || application.mine)).length;
+
+    return (
+        <div className="container mx-auto p-4 relative bg-gray-50 text-gray-900 min-h-screen">
             <h1 className="text-2xl font-bold mb-6">Application Management</h1>
 
             {/* Tab Navigation */}
             <div className="flex mb-6 border-b">
-                <button 
-                    className={`py-2 px-4 mr-2 ${activeTab === 'submit' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
-                    onClick={() => setActiveTab('submit')}
-                >
-                    Submit Application
-                </button>
-                <button 
-                    className={`py-2 px-4 ${activeTab === 'view' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
-                    onClick={() => {
-                        setActiveTab('view');
-                        fetchApplications(); // Fetch current user applications
-                        fetchAllApplications(); // Fetch all applications
-                    }}
-                >
+                {isStudent && (
+                    <button className={tabClass("submit")} onClick={() => setActiveTab("submit")}>
+                        Submit Application
+                    </button>
+                )}
+                <button className={tabClass("view")} onClick={() => setActiveTab("view")}>
                     View Applications
                 </button>
             </div>
 
-            {/* Submit Application Form */}
-            {activeTab === 'submit' && (
-                <div className="max-w-2xl mx-auto">
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-6">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Submit New Application</h2>
-                        <p className="text-gray-600">Please fill out the form below with your application details.</p>
+            {/* Submit Application */}
+            {activeTab === "submit" && isStudent && (
+                <form onSubmit={handleSubmit} className="max-w-2xl bg-white shadow-lg rounded-lg px-4 sm:px-8 pt-6 pb-8" noValidate>
+                    <div className="mb-4">
+                        <label htmlFor="title" className="block text-gray-700 text-sm font-bold mb-2">Title</label>
+                        <input id="title" name="title" type="text" maxLength={120} value={newApplication.title} onChange={handleChange} className={fieldClass} placeholder="What are you asking for?" />
                     </div>
-                    
-                    <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg px-8 pt-6 pb-8 mb-4">
-                        <div className="mb-6">
-                            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="title">
-                                Title
-                            </label>
-                            <input
-                                type="text"
-                                name="title"
-                                value={newApplication.title}
-                                onChange={handleChange}
-                                className="shadow-sm appearance-none border border-gray-200 rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
-                                required
-                                placeholder="Enter application title"
-                            />
-                        </div>
 
-                        <div className="mb-6">
-                            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
-                                Description
-                            </label>
-                            <textarea
-                                name="description"
-                                value={newApplication.description}
-                                onChange={handleChange}
-                                className="shadow-sm appearance-none border border-gray-200 rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
-                                rows="4"
-                                required
-                                placeholder="Describe your application in detail"
-                            />
-                        </div>
+                    <div className="mb-4">
+                        <label htmlFor="category" className="block text-gray-700 text-sm font-bold mb-2">Category</label>
+                        <select id="category" name="category" value={newApplication.category} onChange={handleChange} className={fieldClass}>
+                            {CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                        </select>
+                    </div>
 
-                        <div className="mb-6">
-                            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="category">
-                                Category
-                            </label>
-                            <select
-                                name="category"
-                                value={newApplication.category}
-                                onChange={handleChange}
-                                className="shadow-sm appearance-none border border-gray-200 rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
-                            >
-                                <option value="event">Event</option>
-                                <option value="budget">Budget</option>
-                                <option value="sponsorship">Sponsorship</option>
-                            </select>
-                        </div>
+                    <div className="mb-4">
+                        <label htmlFor="description" className="block text-gray-700 text-sm font-bold mb-2">Description</label>
+                        <textarea id="description" name="description" rows="5" maxLength={2000} value={newApplication.description} onChange={handleChange} className={fieldClass} placeholder="Explain the request: what, when, how much" />
+                    </div>
 
-                        <div className="mb-6">
-                            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="documents">
-                                Upload Documents
-                            </label>
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition duration-200">
-                                <input
-                                    type="file"
-                                    name="documents"
-                                    onChange={handleChange}
-                                    className="hidden"
-                                    multiple
-                                    accept=".pdf,.doc,.docx"
-                                    id="file-upload"
-                                />
-                                <label htmlFor="file-upload" className="cursor-pointer">
-                                    <div className="text-gray-500">
-                                        <i className="fas fa-cloud-upload-alt text-3xl mb-2"></i>
-                                        <p>Drag and drop your files here or click to browse</p>
-                                        <p className="text-sm text-gray-400 mt-1">Accepted formats: PDF, DOC, DOCX</p>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
+                    <div className="mb-6">
+                        <label htmlFor="file" className="block text-gray-700 text-sm font-bold mb-2">Supporting file</label>
+                        <input id="file" type="file" accept={FILE_ACCEPT} onChange={handleFileChange} className="text-sm text-gray-600" />
+                        <p className="text-xs text-gray-500 mt-1">{FILE_HINT}</p>
+                        {fileError && <p className="text-sm text-red-600">{fileError}</p>}
+                    </div>
 
-                        <div className="flex items-center justify-end">
-                            <button
-                                type="submit"
-                                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline transform transition hover:scale-105 duration-200 ease-in-out"
-                            >
-                                Submit Application
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    {formError && <p role="alert" className="mb-4 text-sm text-red-600">{formError}</p>}
+
+                    <button type="submit" disabled={submitting} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50">
+                        {submitting ? "Submitting…" : "Submit Application"}
+                    </button>
+                    <p className="text-xs text-gray-500 mt-3">A faculty member may add a review; an admin approves or rejects. You get a notice when it is decided.</p>
+                </form>
             )}
 
             {/* View Applications */}
-            {activeTab === 'view' && (
-                <div className="mt-6">
-                    {/* My Applications Section */}
-                    <div className="bg-gray-100 p-6 rounded-lg shadow-md mb-8">
-                        <h2 className="text-xl font-semibold mb-4">My Applications</h2>
-                        {applications.length === 0 ? (
-                            <p>No applications found.</p>
-                        ) : (
-                            <ul>
-                                {applications.map((app) => (
-                                    <li key={app._id} className="mb-4 p-4 bg-white rounded shadow">
-                                        <h3 className="text-lg font-semibold">{app.title}</h3>
-                                        <p>{app.description}</p>
-                                        <p className="text-gray-600">Category: {app.category}</p>
-                                        <p className="text-gray-700">Status: {app.status}</p>
-                                        {app.comment && (
-                                            <p className="mt-2 text-gray-700">
-                                                <span className="font-semibold">Admin Comment:</span> {app.comment}
-                                            </p>
-                                        )}
-                                    </li>
-                                ))}
-                            </ul>
+            {activeTab === "view" && (
+                <div>
+                    <div className="flex flex-wrap items-center gap-2 mb-6">
+                        {STATUSES.map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                className={`px-4 py-2 rounded-lg capitalize ${statusFilter === status ? "bg-gray-700 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-100"}`}
+                            >
+                                {status} ({countOf(status)})
+                            </button>
+                        ))}
+                        {isStudent && (
+                            <label className="ml-2 inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} />
+                                Only mine
+                            </label>
                         )}
                     </div>
 
-                    {/* All Applications Section */}
-                    <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-                        <h2 className="text-xl font-semibold mb-4">All Applications</h2>
-                        
-                        {/* Pending Applications */}
-                        <div className="mb-8">
-                            <h3 className="text-lg font-semibold mb-3 text-yellow-600">Pending Applications</h3>
-                            {allApplications.pending.length === 0 ? (
-                                <p>No pending applications</p>
-                            ) : (
-                                <ul>
-                                    {allApplications.pending.map((app) => (
-                                        <li key={app._id} className="mb-4 p-4 bg-white rounded shadow border-l-4 border-yellow-400">
-                                            <h3 className="text-lg font-semibold">{app.title}</h3>
-                                            <p>{app.description}</p>
-                                            <p className="text-gray-600">Category: {app.category}</p>
-                                            <p className="text-gray-700">Status: {app.status}</p>
-                                            {app.comment && (
-                                                <p className="mt-2 text-gray-700">
-                                                    <span className="font-semibold">Admin Comment:</span> {app.comment}
-                                                </p>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
+                    {loadError && <p role="alert" className="text-red-600">{loadError}</p>}
+                    {!loadError && applications === null && <p className="text-gray-500">Loading applications…</p>}
+                    {applications !== null && shown.length === 0 && <p className="text-gray-500">No {statusFilter} applications.</p>}
 
-                        {/* Approved Applications */}
-                        <div className="mb-8">
-                            <h3 className="text-lg font-semibold mb-3 text-green-600">Approved Applications</h3>
-                            {allApplications.approved.length === 0 ? (
-                                <p>No approved applications</p>
-                            ) : (
-                                <ul>
-                                    {allApplications.approved.map((app) => (
-                                        <li key={app._id} className="mb-4 p-4 bg-white rounded shadow border-l-4 border-green-400">
-                                            <h3 className="text-lg font-semibold">{app.title}</h3>
-                                            <p>{app.description}</p>
-                                            <p className="text-gray-600">Category: {app.category}</p>
-                                            <p className="text-gray-700">Status: {app.status}</p>
-                                            {app.comment && (
-                                                <p className="mt-2 text-gray-700">
-                                                    <span className="font-semibold">Admin Comment:</span> {app.comment}
-                                                </p>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
+                    <div className="space-y-4">
+                        {shown.map((application) => {
+                            const busy = busyId === application._id;
+                            const comment = comments[application._id] || "";
+                            const setComment = (value) => setComments((current) => ({ ...current, [application._id]: value }));
+                            const pending = application.status === "pending";
 
-                        {/* Rejected Applications */}
-                        <div>
-                            <h3 className="text-lg font-semibold mb-3 text-red-600">Rejected Applications</h3>
-                            {allApplications.rejected.length === 0 ? (
-                                <p>No rejected applications</p>
-                            ) : (
-                                <ul>
-                                    {allApplications.rejected.map((app) => (
-                                        <li key={app._id} className="mb-4 p-4 bg-white rounded shadow border-l-4 border-red-400">
-                                            <h3 className="text-lg font-semibold">{app.title}</h3>
-                                            <p>{app.description}</p>
-                                            <p className="text-gray-600">Category: {app.category}</p>
-                                            <p className="text-gray-700">Status: {app.status}</p>
-                                            {app.comment && (
-                                                <p className="mt-2 text-gray-700">
-                                                    <span className="font-semibold">Admin Comment:</span> {app.comment}
-                                                </p>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
+                            return (
+                                <div key={application._id} className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 md:p-6">
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg font-semibold text-gray-900 break-words">{application.title}</h3>
+                                            <p className="text-sm text-gray-500">
+                                                {application.submittedBy?.name}
+                                                {application.submittedBy?.department ? `, ${application.submittedBy.department}` : ""} • {formatDate(application.createdAt)}
+                                                {application.mine && " • yours"}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold capitalize">{application.category}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${STATUS_STYLES[application.status]}`}>{application.status}</span>
+                                        </div>
+                                    </div>
+
+                                    <p className="mt-3 text-gray-700 whitespace-pre-line break-words">{application.description}</p>
+
+                                    {application.fileUrl && (
+                                        <a href={application.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-blue-500 hover:underline">
+                                            View supporting file
+                                        </a>
+                                    )}
+
+                                    {application.review?.at && <Remark label="Faculty review" remark={application.review} tone="bg-blue-50 border-blue-200" />}
+                                    {application.decision?.at && (
+                                        <Remark
+                                            label={application.status === "approved" ? "Approved" : "Rejected"}
+                                            remark={application.decision}
+                                            tone={application.status === "approved" ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}
+                                        />
+                                    )}
+
+                                    {pending && (isFaculty || isAdmin) && (
+                                        <div className="mt-4">
+                                            <label htmlFor={`comment-${application._id}`} className="block text-sm font-medium text-gray-700 mb-1">
+                                                {isFaculty ? "Your review" : "Comment (required to reject)"}
+                                            </label>
+                                            <textarea id={`comment-${application._id}`} rows="2" maxLength={500} value={comment} onChange={(e) => setComment(e.target.value)} className={fieldClass} />
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                {isFaculty && (
+                                                    <button onClick={() => act(application, (text) => reviewApplication(application._id, text))} disabled={busy || !comment.trim()} className="px-4 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-800 disabled:opacity-50">
+                                                        {application.review?.at ? "Replace review" : "Save review"}
+                                                    </button>
+                                                )}
+                                                {isAdmin && (
+                                                    <>
+                                                        <button onClick={() => act(application, (text) => decideApplication(application._id, "approved", text))} disabled={busy} className="px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 disabled:opacity-50">
+                                                            Approve
+                                                        </button>
+                                                        <button onClick={() => act(application, (text) => decideApplication(application._id, "rejected", text))} disabled={busy || !comment.trim()} className="px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 disabled:opacity-50">
+                                                            Reject
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

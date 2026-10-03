@@ -52,7 +52,8 @@ Login, logout, forgot password and reset password work as usual. Sessions use
 an httpOnly cookie. Resetting a password ends existing sessions. Sign-up,
 login and password reset are limited to 30 requests per visitor and 10 per
 email address in 15 minutes. Profile forms are limited to 10 per user in the
-same time.
+same time. Everything that changes something in the modules is limited to 60
+requests per user and visitor in 15 minutes.
 
 Email is sent through the Brevo HTTPS API when `BREVO_API_KEY` is set, and
 through SMTP otherwise.
@@ -86,11 +87,15 @@ stated otherwise; that openness is the point of the system.
   **closed**. An admin can also end an election early.
 - A student who meets the eligibility rules applies as a candidate before the
   deadline, once per election, with an agenda and experience. An admin
-  approves or rejects each application.
+  approves or rejects each application. Once voting has started an approved
+  candidate can no longer be rejected, because students may already have
+  voted for them.
 - An eligible student casts one vote for an approved candidate while voting
   is open. The database enforces one vote per student per election. Who voted
   for whom is never shown.
 - Vote counts per candidate are visible while voting is open and afterwards.
+  They are counted from the stored votes each time, not kept as a separate
+  number.
 - When an election closes, the candidate with the most votes is the winner.
   A tie names every tied candidate. An election with no votes has no winner.
 
@@ -98,12 +103,14 @@ stated otherwise; that openness is the point of the system.
 
 - A student submits a complaint with a title, a description and an optional
   document, and chooses whether it is anonymous.
-- Text containing offensive language is refused with a message.
+- Text containing offensive language is refused with a message that names
+  the word. Words a serious complaint may need are allowed.
 - Every approved user can vote a complaint up or down, once; voting again
   changes or removes the vote.
 - An anonymous complaint shows no author. Board members can vote to reveal
   the author; when more than half of all board members have voted to reveal,
-  the author's name is shown. A reveal cannot be undone.
+  the author's name is shown. A reveal cannot be undone. Only votes of people
+  who are on the board at that moment count.
 - An admin can mark a complaint as resolved with a note.
 
 ### Facility booking
@@ -171,6 +178,8 @@ stated otherwise; that openness is the point of the system.
 - Files go to Cloudinary. Images (JPEG, PNG, WebP) and PDF, up to 2 MB.
 - Only approved, logged-in users can upload, and every attachment is
   optional.
+- Files sent from a demo account are not stored; the form is saved and says
+  so.
 - If Cloudinary is not configured or a file cannot be stored, the form is
   still saved and the answer says the file was left out.
 - The one upload before approval is the ID proof on the profile form.
@@ -183,6 +192,10 @@ coordinator, and data in every module at different stages (an election
 taking applications, one open for voting, one closed with a winner;
 complaints with votes; facilities with bookings; applications, budgets,
 integrity records and health concerns).
+
+A demo account can change only what belongs to the sample college. It cannot
+vote on, decide, review, reveal or edit anything a real user made; it can
+read everything, as every approved user can.
 
 Every time the server starts, everything that belongs to the sample college
 is removed and created again, with the same account ids, so a visitor who is
