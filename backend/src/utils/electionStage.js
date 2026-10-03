@@ -1,11 +1,10 @@
-// last moment of the day a date falls on, in UTC
-const endOfDay = (date) => {
-    const day = new Date(date);
-    return new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 23, 59, 59, 999));
-};
+import { endOfCollegeDay } from './collegeTime.js';
+
+// a voting day ends when that day ends at the college
+const endOfDay = endOfCollegeDay;
 
 // Where an election is. Students apply until the deadline; voting runs from the
-// deadline to the end of the voting day; after that, or once an admin has ended it,
+// deadline to the end of the voting day at the college; after that, or once an admin has ended it,
 // the election is closed.
 const stageOf = (election, now = new Date()) => {
     if (election.endedAt) return 'closed';

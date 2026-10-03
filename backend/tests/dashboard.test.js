@@ -13,6 +13,7 @@ import { Facility } from '../src/models/facility.model.js';
 import { Booking } from '../src/models/booking.model.js';
 import { Application } from '../src/models/application.model.js';
 import { stageOf } from '../src/utils/electionStage.js';
+import { collegeDayFromNow } from '../src/utils/collegeTime.js';
 import { createUser, createAdmin, loginAgent } from './helpers.js';
 
 const api = '/api/v1/dashboard';
@@ -202,9 +203,9 @@ describe('review fixes', () => {
 describe('module figures', () => {
     const DAY = 24 * 60 * 60 * 1000;
     const fromNow = (ms) => new Date(Date.now() + ms);
-    const tomorrow = fromNow(DAY).toISOString().slice(0, 10);
+    const tomorrow = collegeDayFromNow(1);
 
-    const voting = (overrides = {}) => Election.create({ title: 'Open', applicationDeadline: fromNow(-DAY), votingDay: fromNow(0), ...overrides });
+    const voting = (overrides = {}) => Election.create({ title: 'Open', applicationDeadline: fromNow(-DAY), votingDay: new Date(collegeDayFromNow(0)), ...overrides });
     const hall = () => Facility.create({ name: 'Hall', description: 'd', location: 'l' });
     const bookingOf = async (user, overrides = {}) => Booking.create({ facility: (await hall())._id, user: user._id, date: tomorrow, startTime: '10:00', endTime: '11:00', purpose: 'p', ...overrides });
     const applicationOf = (user, overrides = {}) => Application.create({ title: 't', description: 'd', category: 'event', submittedBy: user._id, ...overrides });
@@ -368,7 +369,7 @@ describe('sample data of the modules', () => {
     test('what real users made is kept; what they did to sample data goes with it', async () => {
         await rebuildSampleCollege();
         const real = await createUser({ email: 'real.person@gmail.com' });
-        const realElection = await Election.create({ title: 'Real election', applicationDeadline: new Date(Date.now() - 1000), votingDay: new Date() });
+        const realElection = await Election.create({ title: 'Real election', applicationDeadline: new Date(Date.now() - 1000), votingDay: new Date(collegeDayFromNow(0)) });
         const realCandidate = await Candidate.create({ election: realElection._id, student: real._id, agenda: 'a', status: 'Approved' });
         await Vote.create({ election: realElection._id, voter: real._id, candidate: realCandidate._id });
         await Complaint.create({ title: 'Real complaint', description: 'd', author: real._id });

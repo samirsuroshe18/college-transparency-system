@@ -6,6 +6,7 @@ import { Candidate } from '../src/models/candidate.model.js';
 import { Vote } from '../src/models/vote.model.js';
 import { Notice } from '../src/models/notice.model.js';
 import { stageOf, isEligible } from '../src/utils/electionStage.js';
+import { collegeDayFromNow } from '../src/utils/collegeTime.js';
 import { createUser, createAdmin, loginAgent } from './helpers.js';
 
 const api = '/api/v1/elections';
@@ -18,7 +19,8 @@ const student = (overrides = {}) => createUser({ department: 'Computer', current
 // elections at each stage, made directly so the dates can be in the past
 const election = (overrides = {}) => Election.create({ title: 'Class representative', applicationDeadline: fromNow(DAY), votingDay: fromNow(3 * DAY), ...overrides });
 const takingApplications = (overrides) => election(overrides);
-const openForVoting = (overrides) => election({ applicationDeadline: fromNow(-DAY), votingDay: fromNow(0), ...overrides });
+// the voting day is the college's today, so voting is open whatever the time is
+const openForVoting = (overrides) => election({ applicationDeadline: fromNow(-DAY), votingDay: new Date(collegeDayFromNow(0)), ...overrides });
 const closed = (overrides) => election({ applicationDeadline: fromNow(-5 * DAY), votingDay: fromNow(-2 * DAY), ...overrides });
 
 // "votes: n" casts n votes for the candidate, each from a voter of its own
@@ -49,8 +51,9 @@ describe('stageOf', () => {
     test('applications until the deadline, voting to the end of the voting day, then closed', () => {
         expect(stageOf(base, new Date('2026-11-10T11:59:59Z'))).toBe('applications');
         expect(stageOf(base, new Date('2026-11-10T12:00:00Z'))).toBe('voting');
-        expect(stageOf(base, new Date('2026-11-12T23:59:59.999Z'))).toBe('voting');
-        expect(stageOf(base, new Date('2026-11-13T00:00:00Z'))).toBe('closed');
+        // the voting day ends when the day ends at the college (India: 18:30 UTC)
+        expect(stageOf(base, new Date('2026-11-12T18:29:59.999Z'))).toBe('voting');
+        expect(stageOf(base, new Date('2026-11-12T18:30:00Z'))).toBe('closed');
     });
 
     test('an election that was ended is closed at once', () => {
@@ -405,12 +408,11 @@ describe('voting', () => {
     });
 
     test('the edges: a second before the deadline is too early, the last moment of the voting day is in time', async () => {
-        const startOfToday = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()));
         const tooEarly = await election({ applicationDeadline: fromNow(1000), votingDay: fromNow(DAY) });
         // the voting day is today: voting runs to the end of the day, however late it is now
-        const lastDay = await election({ applicationDeadline: fromNow(-DAY), votingDay: startOfToday });
+        const lastDay = await election({ applicationDeadline: fromNow(-DAY), votingDay: new Date(collegeDayFromNow(0)) });
         // the voting day was yesterday
-        const dayAfter = await election({ applicationDeadline: fromNow(-3 * DAY), votingDay: new Date(startOfToday.getTime() - DAY) });
+        const dayAfter = await election({ applicationDeadline: fromNow(-3 * DAY), votingDay: new Date(collegeDayFromNow(-1)) });
         const agent = await as(await student());
 
         expect((await vote(agent, tooEarly._id, (await candidate(tooEarly))._id)).status).toBe(409);

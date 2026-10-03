@@ -3,6 +3,7 @@ import app from '../src/app.js';
 import { Facility } from '../src/models/facility.model.js';
 import { Booking } from '../src/models/booking.model.js';
 import { Notice } from '../src/models/notice.model.js';
+import { collegeDayFromNow } from '../src/utils/collegeTime.js';
 import { createUser, createAdmin, loginAgent } from './helpers.js';
 
 const facilitiesApi = '/api/v1/facilities';
@@ -12,7 +13,7 @@ const as = (user) => loginAgent(user);
 const student = (overrides = {}) => createUser({ name: 'Riya Student', ...overrides });
 
 // a date some days from today, as the forms send it
-const dayFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+const dayFromNow = (days) => collegeDayFromNow(days);
 const TOMORROW = dayFromNow(1);
 
 const facility = (overrides = {}) => Facility.create({ name: 'Seminar Hall', description: 'Seats 120', location: 'Block A', ...overrides });

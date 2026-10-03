@@ -16,7 +16,11 @@ const plainFieldClass = "w-full px-4 py-2 border border-gray-300 rounded-md bg-w
 const fieldClass = "w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
 const STATUS_STYLES = { pending: "bg-amber-100 text-amber-700", approved: "bg-green-100 text-green-700", rejected: "bg-red-100 text-red-700", cancelled: "bg-gray-200 text-gray-600" };
 
-const today = () => new Date().toISOString().split("T")[0];
+// the visitor's own calendar day, as YYYY-MM-DD
+const today = () => {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+};
 
 // Request a facility for a day and a time, and follow your own requests
 const BookingPage = () => {

@@ -8,11 +8,12 @@ import { Complaint } from '../models/complaint.model.js';
 import { Facility } from '../models/facility.model.js';
 import { Booking } from '../models/booking.model.js';
 import { Application } from '../models/application.model.js';
+import { collegeDayFromNow } from '../utils/collegeTime.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const fromNow = (days) => new Date(Date.now() + days * DAY_MS);
-const dayFromNow = (days) => fromNow(days).toISOString().slice(0, 10);
+const dayFromNow = (days) => collegeDayFromNow(days);
 
 // Removes the sample content, and with it whatever anyone did to it: a real user's
 // vote in a sample election or booking of a sample facility would otherwise point at nothing.
@@ -37,7 +38,7 @@ const buildElections = async (who) => {
         title: 'Cultural Secretary',
         description: 'Leads the cultural committee for the academic year.',
         applicationDeadline: fromNow(5),
-        votingDay: fromNow(8),
+        votingDay: new Date(dayFromNow(8)),
         createdBy: who.admin._id,
         isDemo: true,
     });
@@ -51,7 +52,7 @@ const buildElections = async (who) => {
         title: 'Class Representative, Computer TE',
         description: 'Speaks for the third-year Computer class in department meetings.',
         applicationDeadline: fromNow(-2),
-        votingDay: fromNow(1),
+        votingDay: new Date(dayFromNow(1)),
         eligibility: { department: 'Computer', year: 'TE' },
         createdBy: who.admin._id,
         isDemo: true,
@@ -68,7 +69,7 @@ const buildElections = async (who) => {
         title: 'Sports Secretary',
         description: 'Runs the sports committee and the annual sports week.',
         applicationDeadline: fromNow(-20),
-        votingDay: fromNow(-14),
+        votingDay: new Date(dayFromNow(-14)),
         createdBy: who.admin._id,
         isDemo: true,
     });
