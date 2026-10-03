@@ -1,10 +1,14 @@
 // The sample college: accounts visitors can log in with, and enough other people
 // around them for every part of the system to have something to show.
 // Everything here lives under DEMO_DOMAIN, and only that is ever removed.
+import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { User } from '../models/user.model.js';
 import { Notice } from '../models/notice.model.js';
 
-export const DEMO_DOMAIN = '@campus.demo';
+import { DEMO_DOMAIN, DEMO_ID_PREFIX } from '../utils/demo.js';
+
+export { DEMO_DOMAIN };
 export const DEMO_PASSWORD = 'Demo@123';
 
 // the four accounts behind the buttons on the login page
@@ -18,14 +22,16 @@ export const DEMO_LOGINS = {
 const contact = (name, relation) => ({ name, relation, contact: '9000000000' });
 
 const student = (name, email, rollNumber, department, currentYear, classDivision, extra = {}) => ({
-    name, email, rollNumber, department, currentYear, classDivision,
+    name, email, department, currentYear, classDivision,
+    rollNumber: `${DEMO_ID_PREFIX}${rollNumber}`,
     role: 'student', phoneNumber: '9800000000', gender: 'Other', hostelStatus: 'Day Scholar',
     admissionType: 'regular', emergencyContact: contact(`${name.split(' ')[0]}'s parent`, 'Parent'),
     ...extra,
 });
 
 const faculty = (name, email, facultyId, department, designation, extra = {}) => ({
-    name, email, facultyId, department, designation,
+    name, email, department, designation,
+    facultyId: `${DEMO_ID_PREFIX}${facultyId}`,
     role: 'faculty', phoneNumber: '9811111111', qualification: 'M.Tech',
     ...extra,
 });
@@ -63,6 +69,11 @@ const demoUserIds = async () => {
     return users.map((user) => user._id);
 };
 
+// The same account gets the same id at every rebuild, so a visitor who is logged in
+// as a demo account stays logged in when the server restarts.
+const stableId = (email) =>
+    new mongoose.Types.ObjectId(crypto.createHash('md5').update(email).digest('hex').slice(0, 24));
+
 // Removes everything that belongs to the sample college. Accounts made by real
 // sign-ups are not touched.
 const removeSampleCollege = async () => {
@@ -78,6 +89,7 @@ const rebuildSampleCollege = async () => {
 
     // User.create runs the password hashing hook; insertMany would not
     const users = await Promise.all(people.map((person) => User.create({
+        _id: stableId(person.email),
         password: DEMO_PASSWORD,
         isVerified: true,
         isDemo: true,
@@ -100,4 +112,17 @@ const ensureAdmin = async () => {
     return true;
 };
 
-export { rebuildSampleCollege, removeSampleCollege, ensureAdmin }
+// For the start of the server: a sample college that cannot be built must not keep the
+// server from starting, so the failure is reported and the server carries on.
+const startSampleCollege = async () => {
+    try {
+        const { users } = await rebuildSampleCollege();
+        console.log(`Sample college rebuilt: ${users} accounts`);
+        return true;
+    } catch (error) {
+        console.log(`Sample college could not be rebuilt: ${error.message}`);
+        return false;
+    }
+};
+
+export { rebuildSampleCollege, removeSampleCollege, startSampleCollege, ensureAdmin }

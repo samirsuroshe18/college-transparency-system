@@ -11,6 +11,10 @@ import dashboardRouter from './routes/dashboard.routes.js';
 
 const app = express();
 
+// behind the host's proxy the connection's own address is the proxy; this makes
+// req.ip the address the proxy saw
+app.set('trust proxy', 1);
+
 // allow the frontend origin to send the auth cookies
 app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
 app.use(express.json());

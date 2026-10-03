@@ -5,6 +5,7 @@ import { User, DESIGNATIONS } from '../models/user.model.js';
 import { storeFile } from '../utils/uploads.js';
 import { notify } from '../utils/notices.js';
 import { isValidObjectId } from '../utils/objectId.js';
+import { DEMO_ID_PREFIX, isReservedId } from '../utils/demo.js';
 
 const DUPLICATE_KEY = 11000;
 const TEXT_MAX = 200;
@@ -122,11 +123,12 @@ const submitProfile = async (req, role, fields, duplicateMessage) => {
     const user = await User.findById(req.user._id);
     assertCanSubmit(user);
 
-    const idProof = await storeFile(req.file, 'profiles');
-
     Object.assign(user, fields, { role, profileStatus: 'Pending' });
     user.rejectionReason = undefined;
-    if (idProof) user.idProof = idProof;
+
+    // someone who was rejected as one role and now applies as the other gives up the old number
+    if (role === 'student') user.facultyId = undefined;
+    if (role === 'faculty') user.rollNumber = undefined;
 
     try {
         await user.save();
@@ -138,7 +140,32 @@ const submitProfile = async (req, role, fields, duplicateMessage) => {
         throw error;
     }
 
-    return user;
+    // The file is stored only once the profile itself has been accepted, so a refused
+    // form leaves nothing behind. A file that cannot be stored does not undo the profile.
+    let fileStored = true;
+    if (req.file) {
+        const idProof = await storeFile(req.file, 'profiles').catch(() => null);
+
+        if (idProof) {
+            user.idProof = idProof;
+            await user.save();
+        } else {
+            fileStored = false;
+        }
+    }
+
+    return { user, fileStored };
+};
+
+const submittedMessage = (fileStored) => (fileStored
+    ? "Profile submitted. An admin will review it."
+    : "Profile submitted, but the file could not be stored. An admin will review it.");
+
+// numbers of the sample college are not for real accounts
+const assertNotReserved = (req, value, label) => {
+    if (!req.user.isDemo && isReservedId(value)) {
+        throw new ApiError(400, `${label} starting with ${DEMO_ID_PREFIX} are reserved`);
+    }
 };
 
 const submitStudentProfile = asyncHandler(async (req, res) => {
@@ -150,10 +177,12 @@ const submitStudentProfile = asyncHandler(async (req, res) => {
         hostelStatus: readChoice(req.body.hostelStatus, 'Hostel status', HOSTEL_STATUSES),
     };
 
-    const user = await submitProfile(req, 'student', fields, "This roll number is already registered");
+    assertNotReserved(req, fields.rollNumber, 'Roll numbers');
+
+    const { user, fileStored } = await submitProfile(req, 'student', fields, "This roll number is already registered");
 
     return res.status(200).json(
-        new ApiResponse(200, { user }, "Profile submitted. An admin will review it.")
+        new ApiResponse(200, { user }, submittedMessage(fileStored))
     );
 });
 
@@ -168,15 +197,21 @@ const submitFacultyProfile = asyncHandler(async (req, res) => {
         throw new ApiError(400, `Designation must be one of: ${DESIGNATIONS.join(', ')}`);
     }
 
-    const user = await submitProfile(req, 'faculty', fields, "This faculty ID is already registered");
+    assertNotReserved(req, fields.facultyId, 'Faculty IDs');
+
+    const { user, fileStored } = await submitProfile(req, 'faculty', fields, "This faculty ID is already registered");
 
     return res.status(200).json(
-        new ApiResponse(200, { user }, "Profile submitted. An admin will review it.")
+        new ApiResponse(200, { user }, submittedMessage(fileStored))
     );
 });
 
+// The demo admin is a public account: anyone can log in as it. It manages the sample
+// college only and never sees or decides a real person's account.
+const withinReach = (admin) => (admin.isDemo ? { isDemo: true } : {});
+
 const getPendingProfiles = asyncHandler(async (req, res) => {
-    const pending = await User.find({ profileStatus: 'Pending', role: { $in: ['student', 'faculty'] } }).sort({ updatedAt: 1 });
+    const pending = await User.find({ ...withinReach(req.user), profileStatus: 'Pending', role: { $in: ['student', 'faculty'] } }).sort({ updatedAt: 1 });
 
     return res.status(200).json(
         new ApiResponse(200, {
@@ -188,15 +223,16 @@ const getPendingProfiles = asyncHandler(async (req, res) => {
 
 // approved faculty, for giving duties
 const getApprovedFaculty = asyncHandler(async (req, res) => {
-    const faculty = await User.find({ role: 'faculty', profileStatus: 'Approved' }).sort({ name: 1 });
+    const faculty = await User.find({ ...withinReach(req.user), role: 'faculty', profileStatus: 'Approved' }).sort({ name: 1 });
 
     return res.status(200).json(
         new ApiResponse(200, { faculty }, "Approved faculty")
     );
 });
 
-const findUser = async (userId) => {
-    const user = isValidObjectId(userId) ? await User.findById(userId) : null;
+// an account the admin may act on; one outside their reach looks like one that does not exist
+const findUser = async (userId, admin) => {
+    const user = isValidObjectId(userId) ? await User.findOne({ ...withinReach(admin), _id: userId }) : null;
 
     if (!user) {
         throw new ApiError(404, "User not found");
@@ -207,8 +243,8 @@ const findUser = async (userId) => {
 
 // Moves a pending profile to its decision. The filter makes sure two admins deciding
 // at the same moment cannot both succeed.
-const decide = async (userId, changes) => {
-    const user = await findUser(userId);
+const decide = async (userId, admin, changes) => {
+    const user = await findUser(userId, admin);
 
     const decided = await User.findOneAndUpdate(
         { _id: user._id, profileStatus: 'Pending' },
@@ -224,7 +260,7 @@ const decide = async (userId, changes) => {
 };
 
 const approveProfile = asyncHandler(async (req, res) => {
-    const user = await decide(req.params.userId, { $set: { profileStatus: 'Approved' }, $unset: { rejectionReason: 1 } });
+    const user = await decide(req.params.userId, req.user, { $set: { profileStatus: 'Approved' }, $unset: { rejectionReason: 1 } });
 
     await notify(user._id, { type: 'profile', title: 'Your profile was approved', body: 'You can now use the system.', link: '/' });
 
@@ -240,7 +276,7 @@ const rejectProfile = asyncHandler(async (req, res) => {
         throw new ApiError(400, "A reason is required");
     }
 
-    const user = await decide(req.params.userId, { $set: { profileStatus: 'Rejected', rejectionReason: reason } });
+    const user = await decide(req.params.userId, req.user, { $set: { profileStatus: 'Rejected', rejectionReason: reason } });
 
     await notify(user._id, { type: 'profile', title: 'Your profile was rejected', body: reason, link: '/profile-rejected' });
 
@@ -251,7 +287,7 @@ const rejectProfile = asyncHandler(async (req, res) => {
 
 // Board membership and class coordination are given by an admin, never claimed
 const setDuties = asyncHandler(async (req, res) => {
-    const user = await findUser(req.params.userId);
+    const user = await findUser(req.params.userId, req.user);
 
     if (user.role !== 'faculty') {
         throw new ApiError(400, "Duties can only be given to faculty");

@@ -7,6 +7,26 @@ const api = axios.create({
   withCredentials: true,
 });
 
+let onSessionEnded = () => {};
+
+// lets the app react when the server no longer accepts the login, on any request
+export const setSessionEndedHandler = (handler) => {
+  onSessionEnded = handler;
+};
+
+// a 401 from these is an answer to "who is logged in?" or to a login attempt, not an ended session
+const isAuthCheck = (config) => ['/users/login', '/users/me'].includes(config?.url);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && !isAuthCheck(error.config)) {
+      onSessionEnded();
+    }
+    return Promise.reject(error);
+  }
+);
+
 // the message the server sent, or a general one when it could not be reached
 export const errorMessage = (error) => {
   if (error.response) {

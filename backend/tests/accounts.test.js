@@ -398,3 +398,13 @@ describe('roles and profiles', () => {
         expect((await login({ email: user.email, password: 'secret12' })).status).toBe(200);
     });
 });
+
+describe('review fixes', () => {
+    test('nobody can sign up with an address of the sample college', async () => {
+        const res = await register({ ...validSignup, email: 'intruder@campus.demo' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.message).toBe('This email address cannot be used');
+        expect(await User.countDocuments()).toBe(0);
+    });
+});

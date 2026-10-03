@@ -5,11 +5,14 @@ import { Notice } from '../models/notice.model.js';
 
 // A card is one figure on the dashboard: { key, label, value, link }.
 // Each module adds its own cards here as it is built.
-const adminCards = async () => {
+// the demo admin's figures cover the sample college only, like everything else it can see
+const adminCards = async (admin) => {
+    const reach = admin.isDemo ? { isDemo: true } : {};
+
     const [pendingProfiles, students, faculty] = await Promise.all([
-        User.countDocuments({ profileStatus: 'Pending', role: { $in: ['student', 'faculty'] } }),
-        User.countDocuments({ role: 'student', profileStatus: 'Approved' }),
-        User.countDocuments({ role: 'faculty', profileStatus: 'Approved' }),
+        User.countDocuments({ ...reach, profileStatus: 'Pending', role: { $in: ['student', 'faculty'] } }),
+        User.countDocuments({ ...reach, role: 'student', profileStatus: 'Approved' }),
+        User.countDocuments({ ...reach, role: 'faculty', profileStatus: 'Approved' }),
     ]);
 
     return [
@@ -25,7 +28,7 @@ const getDashboard = asyncHandler(async (req, res) => {
     const cards = [{ key: 'unreadNotices', label: 'Unread notices', value: unreadNotices, link: '/' }];
 
     if (req.user.role === 'admin') {
-        cards.unshift(...await adminCards());
+        cards.unshift(...await adminCards(req.user));
     }
 
     return res.status(200).json(

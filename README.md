@@ -27,7 +27,7 @@ for the whole design.
 |---|---|
 | Student | Sign-up, then approved by an admin |
 | Faculty | Sign-up, then approved by an admin |
-| Admin | Created when the server starts, from `ADMIN_EMAIL` and `ADMIN_PASSWORD` |
+| Admin | Created when the server starts, from `ADMIN_EMAIL` and `ADMIN_PASSWORD`. This admin approves real sign-ups |
 | Doctor | Part of the sample college |
 
 ## Tech stack
@@ -113,6 +113,10 @@ admin. Every account uses the password `Demo@123`.
 
 The login page has a button for each of them. Running the script again
 rebuilds the sample college and touches nothing else.
+
+The demo admin manages the sample college only. Accounts made by signing up
+are approved by the admin from `ADMIN_EMAIL`, so set that to try the sign-up
+flow end to end.
 
 ### Tests
 

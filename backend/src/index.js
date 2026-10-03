@@ -2,15 +2,14 @@
 import 'dotenv/config';
 import connectDB from './database/database.js';
 import app from './app.js';
-import { ensureAdmin, rebuildSampleCollege } from './scripts/sampleCollege.js';
+import { ensureAdmin, startSampleCollege } from './scripts/sampleCollege.js';
 
 connectDB().then(async () => {
     await ensureAdmin();
 
     // visitors change the sample college while trying things out; a fresh start puts it back
     if (process.env.SEED_ON_START === 'true') {
-        const { users } = await rebuildSampleCollege();
-        console.log(`Sample college rebuilt: ${users} accounts`);
+        await startSampleCollege();
     }
 
     app.listen(process.env.PORT || 3002, process.env.SERVER_HOST, () => {

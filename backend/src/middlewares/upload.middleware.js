@@ -10,8 +10,7 @@ const TOO_LARGE = "The file must be 2 MB or smaller";
 // files are held in memory and passed on to the file store; nothing is written to disk
 const upload = multer({
     storage: multer.memoryStorage(),
-    // the library refuses a file once it reaches the limit, so the limit is one byte past the largest size allowed
-    limits: { fileSize: MAX_BYTES + 1, files: 1 },
+    limits: { fileSize: MAX_BYTES, files: 1 },
     fileFilter: (req, file, cb) => {
         if (ALLOWED_TYPES.includes(file.mimetype)) {
             cb(null, true);

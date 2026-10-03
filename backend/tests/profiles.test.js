@@ -403,3 +403,134 @@ describe('duties', () => {
         expect((await User.findById(student._id)).isBoardMember).toBe(false);
     });
 });
+
+describe('review fixes: the demo admin', () => {
+    const demoAdmin = async () => loginAgent(await createAdmin({ isDemo: true }));
+
+    test('sees only sample-college profiles, never real sign-ups', async () => {
+        await createUser({ profileStatus: 'Pending', name: 'Real Pending', phoneNumber: '9999999999' });
+        await createUser({ profileStatus: 'Pending', name: 'Demo Pending', isDemo: true });
+        await createUser({ role: 'faculty', name: 'Real Faculty' });
+        await createUser({ role: 'faculty', name: 'Demo Faculty', isDemo: true });
+        const agent = await demoAdmin();
+
+        const pending = await agent.get(`${api}/pending`);
+        const faculty = await agent.get(`${api}/faculty`);
+
+        expect(pending.body.data.students.map((user) => user.name)).toEqual(['Demo Pending']);
+        expect(faculty.body.data.faculty.map((user) => user.name)).toEqual(['Demo Faculty']);
+    });
+
+    test('cannot approve, reject or give duties to a real account', async () => {
+        const realStudent = await createUser({ profileStatus: 'Pending' });
+        const realFaculty = await createUser({ role: 'faculty' });
+        const agent = await demoAdmin();
+
+        const answers = [
+            await agent.patch(`${api}/${realStudent._id}/approve`),
+            await agent.patch(`${api}/${realStudent._id}/reject`).send({ reason: 'No' }),
+            await agent.patch(`${api}/${realFaculty._id}/duties`).send({ isBoardMember: true }),
+        ];
+
+        for (const res of answers) {
+            expect(res.status).toBe(404);
+            expect(res.body.message).toBe('User not found');
+        }
+        expect((await User.findById(realStudent._id)).profileStatus).toBe('Pending');
+        expect((await User.findById(realFaculty._id)).isBoardMember).toBe(false);
+        expect(await Notice.countDocuments()).toBe(0);
+    });
+
+    test('can still decide sample-college profiles', async () => {
+        const demoStudent = await createUser({ profileStatus: 'Pending', isDemo: true });
+
+        const res = await (await demoAdmin()).patch(`${api}/${demoStudent._id}/approve`);
+
+        expect(res.status).toBe(200);
+        expect((await User.findById(demoStudent._id)).profileStatus).toBe('Approved');
+    });
+
+    test('a real admin sees and decides everyone', async () => {
+        const realStudent = await createUser({ profileStatus: 'Pending', name: 'Real Pending' });
+        await createUser({ profileStatus: 'Pending', name: 'Demo Pending', isDemo: true });
+        const agent = await admin();
+
+        const pending = await agent.get(`${api}/pending`);
+
+        expect(pending.body.data.students.map((user) => user.name).sort()).toEqual(['Demo Pending', 'Real Pending']);
+        expect((await agent.patch(`${api}/${realStudent._id}/approve`)).status).toBe(200);
+    });
+});
+
+describe('review fixes: uploads and reserved numbers', () => {
+    test('a refused profile never stores its file', async () => {
+        await createUser({ rollNumber: 'CS-101' });
+        const { agent } = await newUser();
+
+        const res = await agent.post(`${api}/student`)
+            .field('department', 'Computer').field('currentYear', 'TE').field('classDivision', 'A')
+            .field('rollNumber', 'CS-101').field('phoneNumber', '9876543210')
+            .attach('idProof', Buffer.alloc(500), { filename: 'id.png', contentType: 'image/png' });
+
+        expect(res.status).toBe(409);
+        expect(storeFile).not.toHaveBeenCalled();
+    });
+
+    test('a profile whose file could not be stored is still saved, and says so', async () => {
+        storeFile.mockRejectedValueOnce(new Error('file store is down'));
+        const { user, agent } = await newUser();
+
+        const res = await agent.post(`${api}/student`)
+            .field('department', 'Computer').field('currentYear', 'TE').field('classDivision', 'A')
+            .field('rollNumber', 'CS-104').field('phoneNumber', '9876543210')
+            .attach('idProof', Buffer.alloc(500), { filename: 'id.png', contentType: 'image/png' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toBe('Profile submitted, but the file could not be stored. An admin will review it.');
+        const saved = await User.findById(user._id);
+        expect(saved.profileStatus).toBe('Pending');
+        expect(saved.idProof).toBeUndefined();
+    });
+
+    test('when no file store is set up the profile is saved and says so', async () => {
+        storeFile.mockResolvedValueOnce(null);
+        const { agent } = await newUser();
+
+        const res = await agent.post(`${api}/student`)
+            .field('department', 'Computer').field('currentYear', 'TE').field('classDivision', 'A')
+            .field('rollNumber', 'CS-105').field('phoneNumber', '9876543210')
+            .attach('idProof', Buffer.alloc(500), { filename: 'id.png', contentType: 'image/png' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toBe('Profile submitted, but the file could not be stored. An admin will review it.');
+    });
+
+    test('numbers reserved for the sample college cannot be taken by a real account', async () => {
+        const student = await newUser();
+        const teacher = await newUser();
+
+        const roll = await student.agent.post(`${api}/student`).send(studentForm({ rollNumber: 'demo-cs-01' }));
+        const facultyId = await teacher.agent.post(`${api}/faculty`).send(facultyForm({ facultyId: 'DEMO-FAC-1' }));
+
+        expect(roll.status).toBe(400);
+        expect(roll.body.message).toBe('Roll numbers starting with DEMO- are reserved');
+        expect(facultyId.status).toBe(400);
+        expect(facultyId.body.message).toBe('Faculty IDs starting with DEMO- are reserved');
+    });
+
+    test('a sample-college account may use a reserved number', async () => {
+        const { agent } = await newUser({ isDemo: true });
+
+        expect((await agent.post(`${api}/student`).send(studentForm({ rollNumber: 'DEMO-CS-99' }))).status).toBe(200);
+    });
+
+    test('switching from student to faculty after a rejection releases the roll number', async () => {
+        const { user, agent } = await newUser({ profileStatus: 'Rejected', role: 'student', rollNumber: 'CS-300' });
+
+        await agent.post(`${api}/faculty`).send(facultyForm());
+
+        const saved = await User.findById(user._id);
+        expect(saved.role).toBe('faculty');
+        expect(saved.rollNumber).toBeUndefined();
+    });
+});

@@ -2,6 +2,8 @@ import request from 'supertest';
 
 // the limiter is off in the other test files; here it is on, with a small allowance
 process.env.ACCOUNT_RATE_LIMIT = '3';
+// the per-address and per-email limits are tested in rateLimitEmail.test.js
+process.env.ACCOUNT_EMAIL_RATE_LIMIT = '100';
 
 const { default: app } = await import('../src/app.js');
 
@@ -10,6 +12,7 @@ const login = (ip) => request(app).post(`${api}/users/login`).set('X-Forwarded-F
 
 afterAll(() => {
     delete process.env.ACCOUNT_RATE_LIMIT;
+    delete process.env.ACCOUNT_EMAIL_RATE_LIMIT;
 });
 
 test('sign-up, login and password reset share a limit per visitor', async () => {

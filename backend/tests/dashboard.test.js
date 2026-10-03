@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../src/app.js';
 import { User } from '../src/models/user.model.js';
@@ -138,5 +139,53 @@ describe('ensureAdmin', () => {
 
         expect(await ensureAdmin()).toBe(false);
         expect(await User.countDocuments()).toBe(0);
+    });
+});
+
+describe('review fixes', () => {
+    test('the demo admin sees figures for the sample college only', async () => {
+        await createUser({ profileStatus: 'Pending' });
+        await createUser();
+        await createUser({ profileStatus: 'Pending', isDemo: true });
+        await createUser({ isDemo: true });
+        await createUser({ role: 'faculty', isDemo: true });
+
+        const res = await (await loginAgent(await createAdmin({ isDemo: true }))).get(api);
+
+        expect(cardsOf(res)).toEqual({ pendingProfiles: 1, students: 1, faculty: 1, unreadNotices: 0 });
+    });
+
+    test('a rebuild keeps the same account ids, so a visitor stays logged in', async () => {
+        await rebuildSampleCollege();
+        const before = await User.findOne({ email: DEMO_LOGINS.student });
+        const agent = await loginAgent(before, DEMO_PASSWORD);
+
+        await rebuildSampleCollege();
+
+        const after = await User.findOne({ email: DEMO_LOGINS.student });
+        expect(String(after._id)).toBe(String(before._id));
+        expect((await agent.get('/api/v1/users/me')).status).toBe(200);
+    });
+
+    test('sample-college numbers carry the reserved prefix', async () => {
+        await rebuildSampleCollege();
+
+        const numbered = await User.find({ email: /@campus\.demo$/, role: { $in: ['student', 'faculty'] } });
+        expect(numbered.length).toBeGreaterThan(0);
+        for (const user of numbered) {
+            expect(user.rollNumber || user.facultyId).toMatch(/^DEMO-/);
+        }
+    });
+
+    test('a rebuild that cannot finish is reported, not thrown, by the start-up helper', async () => {
+        const { startSampleCollege } = await import('../src/scripts/sampleCollege.js');
+        // a real account already holds a number the sample college needs
+        await createUser({ email: 'real.person@gmail.com', rollNumber: 'DEMO-CS-TE-A-01' });
+        const silenced = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+        await expect(startSampleCollege()).resolves.toBe(false);
+
+        silenced.mockRestore();
+        expect(await User.countDocuments({ email: 'real.person@gmail.com' })).toBe(1);
     });
 });

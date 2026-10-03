@@ -4,6 +4,7 @@ import ApiResponse from '../utils/ApiResponse.js';
 import { User } from '../models/user.model.js';
 import mailSender from '../utils/mailSender.js';
 import { endSessions } from '../utils/sessions.js';
+import { isDemoEmail } from '../utils/demo.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 6;
@@ -66,6 +67,11 @@ const registerUser = asyncHandler(async (req, res) => {
 
     if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
         throw new ApiError(400, "Password must be at least 6 characters");
+    }
+
+    // addresses of the sample college are made by the server only
+    if (isDemoEmail(email)) {
+        throw new ApiError(400, "This email address cannot be used");
     }
 
     const existedUser = await User.findOne({ email });
