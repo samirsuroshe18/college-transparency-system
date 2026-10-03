@@ -18,8 +18,11 @@ for the whole design.
 | Faculty duties: board member, class coordinator | Done |
 | Notices and dashboard | Done |
 | Demo accounts for every role | Done |
-| Elections, complaints, facility booking, applications | Next |
-| Budgets, integrity records, health and leave | After that |
+| Elections: candidates, one vote per student, live counts, winners | Done |
+| Complaints: votes, anonymous authors revealed only by a board majority | Done |
+| Facility booking: requests, no overlapping approvals | Done |
+| Applications: faculty review, admin decision, email to the applicant | Done |
+| Budgets, integrity records, health and leave | Next |
 
 ## Roles
 
@@ -101,8 +104,9 @@ npm run seed
 ```
 
 This creates a sample college under the `@campus.demo` address: one account
-for each role, more students and faculty, and two profiles waiting for the
-admin. Every account uses the password `Demo@123`.
+for each role, more students and faculty, two profiles waiting for the
+admin, and elections, complaints, bookings and applications in different
+states. Every account uses the password `Demo@123`.
 
 | Role | Email |
 |---|---|
@@ -137,7 +141,7 @@ backend/
     index.js            Starts the server
     controllers/        Request handlers
     middlewares/        Login, roles, uploads, request limit
-    models/             User, Notice
+    models/             User, Notice, Election, Candidate, Vote, Complaint, Facility, Booking, Application
     routes/             Route definitions
     utils/              Mail, uploads, notices, helpers
     scripts/            Sample college

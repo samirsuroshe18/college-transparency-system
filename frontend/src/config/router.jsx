@@ -19,9 +19,16 @@ import FacultyProfileFormScreen from "../pages/commonPages/FacultyProfileFormScr
 import PendingProfilesPage from "../pages/commonPages/PendingProfilePage.jsx";
 import ProfilePendingPage from "../pages/commonPages/ProfilePendingPage.jsx";
 import ProfileRejectedPage from "../pages/commonPages/ProfileRejectedPage.jsx";
+import StudentElectionPanel from "../pages/StudentElection/Election.jsx";
+import AdminElectionPanel from "../pages/StudentElection/AdminElection.jsx";
+import StudentComplaint from "../pages/Complaints/StudentComplaint.jsx";
+import FacilityDashboard from "../pages/FacilityBooking/Dashboard.jsx";
+import BookingPage from "../pages/FacilityBooking/BookingPage.jsx";
+import BookingRequests from "../pages/FacilityBooking/AdminPanel.jsx";
+import ApplicationManagement from "../pages/applicationModule/ApplicationManagement.jsx";
 
-// The pages of the elections, complaints, facility, application, budget, integrity and
-// health modules are in src/pages and are added here as each module is connected.
+// The pages of the budget, integrity and health modules are in src/pages and are added
+// here as each module is connected.
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -39,6 +46,17 @@ const router = createBrowserRouter(
           <Route element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="pending-request" element={<RequireRole roles={["admin"]}><PendingProfilesPage /></RequireRole>} />
+
+            <Route path="election" element={<StudentElectionPanel />} />
+            <Route path="admin-election" element={<RequireRole roles={["admin"]}><AdminElectionPanel /></RequireRole>} />
+
+            <Route path="complaints" element={<StudentComplaint />} />
+
+            <Route path="facility" element={<FacilityDashboard />} />
+            <Route path="facility-booking" element={<RequireRole roles={["student", "faculty"]}><BookingPage /></RequireRole>} />
+            <Route path="facility-bookings" element={<BookingRequests />} />
+
+            <Route path="application-page" element={<ApplicationManagement />} />
           </Route>
         </Route>
 

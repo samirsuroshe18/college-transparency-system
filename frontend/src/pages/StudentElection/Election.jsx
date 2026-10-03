@@ -1,196 +1,292 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { Tabs, Tab } from "@mui/material";
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
-import axios from 'axios'
+import { applyAsCandidate, castVote, getElection, listElections } from "../../api/electionApi";
+import { errorMessage } from "../../api/client";
+import useToast from "../../utils/useToast";
+
+const STAGES = ["applications", "voting", "closed"];
+const TAB_LABELS = ["Upcoming", "Live", "Completed"];
+
+const formatDate = (value) => new Date(value).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+// who an election is for, in words
+const describeEligibility = (rules = {}) => {
+  const parts = [rules.department, rules.year, rules.division && `Division ${rules.division}`].filter(Boolean);
+  return parts.length > 0 ? `For ${parts.join(", ")}` : "Open to all students";
+};
+
+const share = (votes, total) => (total > 0 ? Math.round((votes / total) * 100) : 0);
+
+const Bar = ({ value, color }) => (
+  <div className="mt-2 h-2 w-full rounded-full bg-gray-200" role="img" aria-label={`${value} percent`}>
+    <div className={`h-2 rounded-full ${color}`} style={{ width: `${value}%` }} />
+  </div>
+);
+
+const STATUS_STYLES = { Pending: "bg-amber-100 text-amber-700", Approved: "bg-green-100 text-green-700", Rejected: "bg-red-100 text-red-700" };
+
+// One election with its candidates. "detail" is what the server says about it for this user.
+const ElectionCard = ({ detail, onApply, onVote, busy }) => {
+  const { election, candidates, myCandidacy, winners, eligible, hasVoted } = detail;
+  const totalVotes = candidates.reduce((sum, candidate) => sum + candidate.votes, 0);
+  const winnerIds = winners.map((winner) => winner._id);
+
+  return (
+    <motion.div whileHover={{ scale: 1.02 }}>
+      <Card className="shadow-lg bg-white border-gray-200 h-full">
+        <CardContent className="p-6">
+          <h2 className={`text-xl font-semibold ${election.stage === "voting" ? "text-green-600" : election.stage === "closed" ? "text-gray-700" : "text-blue-500"}`}>
+            {election.title}
+          </h2>
+          {election.description && <p className="text-gray-600 mt-1">{election.description}</p>}
+          <p className="text-sm text-gray-500 mt-1">{describeEligibility(election.eligibility)}</p>
+
+          {election.stage === "applications" && (
+            <>
+              <p className="text-gray-600 mt-2">Applications close: {formatDate(election.applicationDeadline)}</p>
+              <p className="text-gray-600">Voting day: {formatDate(election.votingDay)}</p>
+              <p className="text-sm text-gray-500 mt-2">
+                {candidates.length} approved {candidates.length === 1 ? "candidate" : "candidates"} so far
+              </p>
+
+              {myCandidacy ? (
+                <p className="mt-4 text-sm text-gray-700">
+                  Your application:{" "}
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_STYLES[myCandidacy.status]}`}>{myCandidacy.status}</span>
+                </p>
+              ) : eligible ? (
+                <button onClick={() => onApply(election)} className="mt-4 px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600">
+                  Apply Now
+                </button>
+              ) : null}
+            </>
+          )}
+
+          {election.stage === "voting" && (
+            <>
+              <p className="text-gray-600 mt-2">Voting ends: {formatDate(election.votingDay)}</p>
+              {hasVoted && <p className="mt-2 text-sm font-semibold text-green-600">You have voted in this election.</p>}
+              {!eligible && <p className="mt-2 text-sm text-gray-500">You can follow this election; voting is for eligible students.</p>}
+            </>
+          )}
+
+          {election.stage === "closed" && (
+            <>
+              <p className="text-gray-600 mt-2">Completed on: {formatDate(election.endedAt || election.votingDay)}</p>
+              <p className="mt-2 text-sm font-semibold text-gray-800">
+                {winners.length === 0 && "No votes were cast."}
+                {winners.length === 1 && `Winner: ${winners[0].student?.name}`}
+                {winners.length > 1 && `Tie between: ${winners.map((winner) => winner.student?.name).join(", ")}`}
+              </p>
+            </>
+          )}
+
+          {election.stage !== "applications" && candidates.map((candidate) => (
+            <div key={candidate._id} className="mt-4">
+              <div className="flex justify-between items-center gap-3">
+                <div className="min-w-0">
+                  <span className="font-medium text-gray-900">
+                    {candidate.student?.name}
+                    {winnerIds.includes(candidate._id) && <span className="ml-2 text-xs font-semibold text-green-700">Winner</span>}
+                  </span>
+                  <p className="text-sm text-gray-500 break-words">{candidate.agenda}</p>
+                </div>
+                {election.stage === "voting" && eligible && !hasVoted ? (
+                  <button
+                    onClick={() => onVote(election, candidate)}
+                    disabled={busy}
+                    className="shrink-0 px-3 py-1.5 rounded-md bg-green-500 text-white hover:bg-green-600 disabled:opacity-50"
+                  >
+                    Vote
+                  </button>
+                ) : (
+                  <span className="shrink-0 text-sm text-gray-700">{candidate.votes} {candidate.votes === 1 ? "vote" : "votes"}</span>
+                )}
+              </div>
+              <Bar value={share(candidate.votes, totalVotes)} color={election.stage === "voting" ? "bg-green-500" : "bg-gray-500"} />
+            </div>
+          ))}
+
+          {election.stage !== "applications" && candidates.length === 0 && (
+            <p className="mt-4 text-sm text-gray-500">No approved candidates.</p>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
 
 const StudentElectionPanel = () => {
-  const { userData } = useSelector((state) => state.auth);
-  const [elections, setElections] = useState([]);
-  const [liveElections, setLiveElections] = useState([]);
-  const [completedElections, setCompletedElections] = useState([]);
-  const [userApplications, setUserApplications] = useState([]);
-  const [isApplying, setIsApplying] = useState(false);
-  const [applicationData, setApplicationData] = useState({ agenda: "", experience: "" });
-  const [selectedElectionId, setSelectedElectionId] = useState(null);
-  const [tabValue, setTabValue] = useState(0);
+  const user = useSelector((state) => state.auth.userData);
+  const toast = useToast();
+  const [details, setDetails] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [tabValue, setTabValue] = useState(1);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    fetchElections();
+  // the application dialog
+  const [applyingTo, setApplyingTo] = useState(null);
+  const [applicationData, setApplicationData] = useState({ agenda: "", experience: "" });
+  const [applicationError, setApplicationError] = useState("");
+
+  // the vote to confirm
+  const [pendingVote, setPendingVote] = useState(null);
+
+  const load = useCallback(async () => {
+    try {
+      const elections = await listElections();
+      // the list has the stages; candidates and this user's part come with each election
+      setDetails(await Promise.all(elections.map((election) => getElection(election._id))));
+      setLoadError("");
+    } catch (error) {
+      setLoadError(errorMessage(error));
+    }
   }, []);
 
-  const fetchElections = async () => {
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const openApplication = (election) => {
+    setApplyingTo(election);
+    setApplicationData({ agenda: "", experience: "" });
+    setApplicationError("");
+  };
+
+  const submitApplication = async (e) => {
+    e.preventDefault();
+
+    if (!applicationData.agenda.trim()) {
+      setApplicationError("Agenda is required");
+      return;
+    }
+
+    setBusy(true);
     try {
-      const response = await axios.get(`${import.meta.env.VITE_DOMAIN}/api/v1/admin/elections/get`);
-      const today = new Date();
-      const upcoming = [], live = [], completed = [];
-
-      response.data.forEach((election) => {
-        const electionDate = new Date(election.electionDate);
-        const applicationDeadline = new Date(election.applicationDeadline);
-
-        if (isNaN(electionDate) || isNaN(applicationDeadline)) {
-          console.warn(`Invalid date found in election: ${election.title}`);
-          return;
-        }
-
-        console.log("todays Date", today)
-        console.log("electionDate Date", electionDate)
-        console.log("electionDate Date", applicationDeadline)
-        console.log(today >= electionDate && today <= applicationDeadline)
-
-        if (election.ended) {
-          completed.push(election);
-        } else if (today >= electionDate && today <= applicationDeadline) {
-          live.push(election);
-        } else if (today < electionDate) {
-          upcoming.push(election);
-        } else if (today > applicationDeadline) {
-          completed.push(election);
-        }
-      });
-
-      setElections(upcoming);
-      setLiveElections(live);
-      setCompletedElections(completed);
+      const res = await applyAsCandidate(applyingTo._id, applicationData);
+      toast.success(res.message);
+      setApplyingTo(null);
+      await load();
     } catch (error) {
-      console.error("Error fetching elections:", error);
+      setApplicationError(errorMessage(error));
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleApplyClick = (electionId) => {
-    setSelectedElectionId(electionId);
-    setIsApplying(true);
-  };
-
-  const handleInputChange = (e) => {
-    setApplicationData({ ...applicationData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmitApplication = async () => {
-    if (!selectedElectionId || !userData?._id) return;
-
+  const confirmVote = async () => {
+    setBusy(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_DOMAIN}/api/v1/applications/${selectedElectionId}/apply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userData?._id,
-          name: userData?.name || "John Doe",
-          agenda: applicationData.agenda,
-          experience: applicationData.experience,
-        }),
-      });
-
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "Failed to submit application");
-
-      setIsApplying(false);
+      const res = await castVote(pendingVote.election._id, pendingVote.candidate._id);
+      toast.success(res.message);
+      await load();
     } catch (error) {
-      console.error("Error submitting application:", error.message);
+      toast.error(error);
+    } finally {
+      setBusy(false);
+      setPendingVote(null);
     }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date';
-    }
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+  const shown = (details || []).filter((detail) => detail.election.stage === STAGES[tabValue]);
+  const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
     <div className="min-h-screen p-6 bg-gray-50 text-gray-900">
-      <h1 className="text-3xl font-bold text-blue-600 mb-6">Student Election Panel</h1>
-      <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-        <Tab label="Upcoming" />
-        <Tab label="Live" />
-        <Tab label="Completed" />
-      </Tabs>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h1 className="text-3xl font-bold text-blue-600">Student Election Panel</h1>
+        {user.role === "admin" && (
+          <Link to="/admin-election" className="px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600">Manage elections</Link>
+        )}
+      </div>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tabValue === 0 && elections.map((election) => (
-          <motion.div whileHover={{ scale: 1.05 }} key={election._id}>
-            <Card className="shadow-lg">
-              <CardContent>
-                <h2 className="text-xl font-semibold text-blue-500">{election.title}</h2>
-                <p className="text-gray-600">Applications close: {election.applicationDeadline ? formatDate(election.applicationDeadline) : 'Date not available'}</p>
-                <Button onClick={() => handleApplyClick(election._id)} className="mt-4 bg-blue-500 text-white">
-                  Apply Now
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-
-        {tabValue === 1 && liveElections.map((election) => (
-          <motion.div whileHover={{ scale: 1.05 }} key={election._id}>
-            <Card className="shadow-lg">
-              <CardContent>
-                <h2 className="text-xl font-semibold text-green-500">{election.title}</h2>
-                <p className="text-gray-600">Voting ends: {election.electionDate ? formatDate(election.electionDate) : 'Date not available'}</p>
-                {(election.candidates || []).map((candidate) => (
-                  <div key={candidate._id} className="mt-4">
-                    <div className="flex justify-between items-center">
-                      <span>{candidate.name}</span>
-                      <Button className="bg-green-500 text-white">Vote</Button>
-                    </div>
-                    <Progress value={candidate.votePercentage || 0} className="mt-2" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-
-        {tabValue === 2 && completedElections.map((election) => (
-          <motion.div whileHover={{ scale: 1.05 }} key={election._id}>
-            <Card className="shadow-lg">
-              <CardContent>
-                <h2 className="text-xl font-semibold text-gray-700">{election.title}</h2>
-                <p className="text-gray-600">Completed on: {election.electionDate ? formatDate(election.electionDate) : 'Date not available'}</p>
-                {(election.candidates || []).map((candidate) => (
-                  <div key={candidate._id} className="mt-4">
-                    <div className="flex justify-between items-center">
-                      <span>{candidate.name}</span>
-                      <span>{candidate.votes} votes</span>
-                    </div>
-                    <Progress value={candidate.votePercentage || 0} className="mt-2" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
+      {/* the page is light whatever the theme of the frame, so the tabs carry their own colours */}
+      <div className="flex border-b border-gray-200" role="tablist">
+        {TAB_LABELS.map((label, index) => (
+          <button
+            key={label}
+            role="tab"
+            aria-selected={tabValue === index}
+            onClick={() => setTabValue(index)}
+            className={`py-2 px-4 mr-2 ${tabValue === index ? "border-b-2 border-blue-500 text-blue-600 font-medium" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            {label}
+          </button>
         ))}
       </div>
 
-      <Dialog open={isApplying} onOpenChange={setIsApplying}>
-        <DialogContent>
-          <DialogHeader>Apply for Election</DialogHeader>
-          <div className="space-y-4">
-            <label className="block text-sm font-medium">Name</label>
-            <Input type="text" value={userData?.name || ""} disabled className="bg-gray-200" />
+      {loadError && <p role="alert" className="mt-6 text-red-600">{loadError}</p>}
+      {!loadError && details === null && <p className="mt-6 text-gray-500">Loading elections…</p>}
+      {details !== null && shown.length === 0 && (
+        <p className="mt-6 text-gray-500">
+          {tabValue === 0 && "No election is taking applications right now."}
+          {tabValue === 1 && "No election is open for voting right now."}
+          {tabValue === 2 && "No election has been completed yet."}
+        </p>
+      )}
 
-            <label className="block text-sm font-medium">Agenda</label>
-            <Input type="text" name="agenda" value={applicationData.agenda} onChange={handleInputChange} />
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {shown.map((detail) => (
+          <ElectionCard
+            key={detail.election._id}
+            detail={detail}
+            busy={busy}
+            onApply={openApplication}
+            onVote={(election, candidate) => setPendingVote({ election, candidate })}
+          />
+        ))}
+      </div>
 
-            <label className="block text-sm font-medium">Experience</label>
-            <Input type="text" name="experience" value={applicationData.experience} onChange={handleInputChange} />
+      {/* Apply as a candidate */}
+      {applyingTo && (
+        <div className="fixed inset-0 bg-gray-600/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <form onSubmit={submitApplication} className="mt-16 w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800">Apply for {applyingTo.title}</h3>
+            <div className="space-y-4 mt-4">
+              <div>
+                <label htmlFor="candidate-name" className="block text-sm font-medium text-gray-700">Name</label>
+                <input id="candidate-name" type="text" value={user.name} disabled className={`${inputClass} bg-gray-200`} />
+              </div>
+              <div>
+                <label htmlFor="agenda" className="block text-sm font-medium text-gray-700">Agenda</label>
+                <textarea id="agenda" rows={3} maxLength={2000} value={applicationData.agenda} onChange={(e) => setApplicationData({ ...applicationData, agenda: e.target.value })} className={inputClass} />
+              </div>
+              <div>
+                <label htmlFor="experience" className="block text-sm font-medium text-gray-700">Experience</label>
+                <textarea id="experience" rows={2} maxLength={2000} value={applicationData.experience} onChange={(e) => setApplicationData({ ...applicationData, experience: e.target.value })} className={inputClass} />
+              </div>
+              {applicationError && <p role="alert" className="text-sm text-red-600">{applicationError}</p>}
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setApplyingTo(null)} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">Cancel</button>
+              <button type="submit" disabled={busy} className="px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 disabled:opacity-50">
+                {busy ? "Submitting…" : "Submit"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Confirm a vote: it cannot be changed afterwards */}
+      {pendingVote && (
+        <div className="fixed inset-0 bg-gray-600/50 z-50 flex items-start justify-center p-4">
+          <div className="mt-24 w-full max-w-md bg-white rounded-lg shadow-lg p-6" role="alertdialog" aria-labelledby="confirm-vote">
+            <h3 id="confirm-vote" className="text-lg font-semibold text-gray-800">Vote for {pendingVote.candidate.student?.name}?</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              In {pendingVote.election.title}. You can vote once, and a vote cannot be changed.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setPendingVote(null)} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">Cancel</button>
+              <button onClick={confirmVote} disabled={busy} className="px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 disabled:opacity-50">
+                {busy ? "Voting…" : "Confirm vote"}
+              </button>
+            </div>
           </div>
-          <DialogFooter>
-            <Button onClick={handleSubmitApplication} className="bg-green-500 text-white">Submit</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 };
