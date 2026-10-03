@@ -6,9 +6,9 @@ import { storeFile } from '../utils/uploads.js';
 import { notify } from '../utils/notices.js';
 import { isValidObjectId } from '../utils/objectId.js';
 import { DEMO_ID_PREFIX, isReservedId } from '../utils/demo.js';
+import { readChoice, readDate, readText } from '../utils/input.js';
 
 const DUPLICATE_KEY = 11000;
-const TEXT_MAX = 200;
 
 const GENDERS = ["Male", "Female", "Other"];
 const ADMISSION_TYPES = ["regular", "lateral"];
@@ -19,23 +19,6 @@ const STUDENT_REQUIRED = { department: 'Department', currentYear: 'Current year'
 const STUDENT_OPTIONAL = { passingYear: 'Passing year', bloodGroup: 'Blood group', address: 'Address' };
 const FACULTY_REQUIRED = { department: 'Department', designation: 'Designation', facultyId: 'Faculty ID', phoneNumber: 'Phone number' };
 const FACULTY_OPTIONAL = { qualification: 'Qualification', officeRoomNumber: 'Office room', officePhoneNumber: 'Office phone', address: 'Address' };
-
-// A form field as trimmed text. Forms send text; a number is accepted as text too.
-const readText = (value, label) => {
-    if (value === undefined || value === null || value === '') return '';
-
-    if (typeof value !== 'string' && typeof value !== 'number') {
-        throw new ApiError(400, `${label} must be text`);
-    }
-
-    const text = String(value).trim();
-
-    if (text.length > TEXT_MAX) {
-        throw new ApiError(400, `${label} must be at most ${TEXT_MAX} characters`);
-    }
-
-    return text;
-};
 
 const readFields = (body, required, optional) => {
     const fields = {};
@@ -53,30 +36,6 @@ const readFields = (body, required, optional) => {
     }
 
     return fields;
-};
-
-// a choice from a fixed list; an empty value means "not given"
-const readChoice = (value, label, choices) => {
-    const text = readText(value, label);
-
-    if (text && !choices.includes(text)) {
-        throw new ApiError(400, `${label} must be one of: ${choices.join(', ')}`);
-    }
-
-    return text || undefined;
-};
-
-const readDate = (value, label) => {
-    const text = readText(value, label);
-    if (!text) return undefined;
-
-    const date = new Date(text);
-
-    if (Number.isNaN(date.getTime())) {
-        throw new ApiError(400, `${label} must be a date`);
-    }
-
-    return date;
 };
 
 // multipart forms send the contact as a JSON string; JSON bodies send an object
