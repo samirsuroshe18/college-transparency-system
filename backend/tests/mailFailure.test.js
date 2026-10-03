@@ -4,6 +4,7 @@ import request from 'supertest';
 // every email fails to send in this file
 jest.unstable_mockModule('../src/utils/mailSender.js', () => ({
     default: jest.fn(async () => undefined),
+    sendMail: jest.fn(async () => false),
 }));
 
 const { default: app } = await import('../src/app.js');
