@@ -4,8 +4,20 @@ A portal where a college runs its everyday processes in the open. Students,
 faculty, the administration and the college doctor each log in to one place,
 and everyone can see what was decided and by whom.
 
+**Live demo:** <https://college-transparency-system.vercel.app> — the login
+page has a button for each role. The first request after a quiet spell can
+take up to a minute, while the server wakes up.
+
 The project started at HackFusion 2.0 in February 2025 and was completed
 afterwards. [docs/design.md](docs/design.md) describes the whole design.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![A student's dashboard](docs/screenshots/dashboard.png) | ![An election that is open for voting](docs/screenshots/election.png) |
+| ![The complaint box](docs/screenshots/complaints.png) | ![Booking a facility](docs/screenshots/facility.png) |
+| ![The doctor's list of health concerns](docs/screenshots/doctor-health.png) | ![Profiles waiting for the admin](docs/screenshots/admin-requests.png) |
 
 ## What it does
 
@@ -258,6 +270,10 @@ docs/
 ## Team
 
 Built by Samir Suroshe ([@samirsuroshe18](https://github.com/samirsuroshe18)),
-Tanishq Kulkarni ([@TanishqMSD](https://github.com/TanishqMSD)),
+Tanishq Kulkarni ([@tanishqbuilds](https://github.com/tanishqbuilds)),
 Mohit Dhangar ([@mohit45v](https://github.com/mohit45v)) and
 Pranay Sanap ([@pranaysanap](https://github.com/pranaysanap)).
+
+## License
+
+[MIT](LICENSE)

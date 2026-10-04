@@ -10,7 +10,7 @@
     "seed": "node src/scripts/seed.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "description": "College Transparency System API",
   "dependencies": {
     "bad-words": "^4.0.0",

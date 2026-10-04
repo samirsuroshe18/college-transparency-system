@@ -13,7 +13,7 @@ describes the finished version.
 
 - Every module works end to end and enforces who may do what.
 - A visitor can try every role without signing up.
-- The existing pages and their layout are kept; what is broken is repaired.
+- The existing pages and their layout are kept.
 - The server is covered by tests and runs on free hosting.
 
 ## Out of scope
@@ -288,17 +288,6 @@ one spelling) as each module is worked on.
   who is notified about leave.
 - Web app: lint and build, and each flow checked by hand in a browser for
   every role.
-
-## Delivery
-
-The work is done in three stages. Each ends with a working application, an
-independent review and a pull request.
-
-| Stage | Contents |
-|---|---|
-| 1 | Clean-up, test setup, accounts and roles, profile approval, notices, dashboards, demo logins |
-| 2 | Elections, complaints, facility booking, applications |
-| 3 | Budgets, integrity records, health and leave, sample college data, deployment |
 
 ## Deployment
 
